@@ -35,7 +35,9 @@ const navItems = [
   },
 ];
 
-export default function Sidebar({ activePage, setActivePage, sidebarOpen, setSidebarOpen }) {
+export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, onLogout }) {
+  const initials = user?.name ? user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "U";
+
   return (
     <aside className={`
       fixed top-0 left-0 h-full w-60 bg-[#0D0D14] border-r border-white/5 flex flex-col z-30
@@ -67,10 +69,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, setSid
               onClick={() => setActivePage(item.id)}
               className={`
                 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 text-left
-                ${active
-                  ? "bg-emerald-500/15 text-emerald-400 font-medium"
-                  : "text-white/40 hover:text-white/70 hover:bg-white/5"
-                }
+                ${active ? "bg-emerald-500/15 text-emerald-400 font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"}
               `}
             >
               <span className={active ? "text-emerald-400" : "text-white/30"}>{item.icon}</span>
@@ -82,14 +81,25 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, setSid
       </nav>
 
       <div className="px-3 py-4 border-t border-white/5">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer group">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">AR</div>
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03]">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+            {initials}
+          </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white/80 truncate">Arif Rahman</div>
-            <div className="text-[11px] text-white/30">Free Plan</div>
+            <div className="text-sm font-medium text-white/80 truncate">{user?.name || "User"}</div>
+            <div className="text-[11px] text-white/30 truncate">{user?.email || ""}</div>
           </div>
         </div>
-        <div className="mt-2 mx-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <button
+          onClick={onLogout}
+          className="w-full mt-2 px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all text-left flex items-center gap-2"
+        >
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+            <path d="M9 2H3a1 1 0 00-1 1v10a1 1 0 001 1h6M12 9l3-3-3-3M7 9h8" />
+          </svg>
+          Logout
+        </button>
+        <div className="mt-2 mx-0 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
           <p className="text-[11px] text-emerald-400 font-medium">Upgrade to Pro</p>
           <p className="text-[10px] text-white/30 mt-0.5">Unlimited uploads + analytics</p>
         </div>
