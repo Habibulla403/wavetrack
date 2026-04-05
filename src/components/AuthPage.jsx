@@ -191,7 +191,7 @@ export default function AuthPage({ onAuth }) {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-sm font-semibold text-white transition-all active:scale-95"
             >
-              {loading ? "Please wait..." : isLogin ? "Sign in" : "Create account"}
+              {loading ? "Please dark..." : isLogin ? "Sign in" : "Create account"}
             </button>
           </div>
 
