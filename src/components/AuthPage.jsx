@@ -47,6 +47,7 @@ export default function AuthPage({ onAuth }) {
 
   return (
     <div className="min-h-screen bg-white flex">
+      {/* Left side */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#0A0A0F] flex-col items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent" />
         <div className="relative z-10 text-center">
@@ -70,6 +71,7 @@ export default function AuthPage({ onAuth }) {
         </div>
       </div>
 
+      {/* Right side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
@@ -148,7 +150,11 @@ export default function AuthPage({ onAuth }) {
                   placeholder="••••••••"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
                   <EyeIcon open={showPass} />
                 </button>
               </div>
@@ -165,7 +171,11 @@ export default function AuthPage({ onAuth }) {
                     placeholder="••••••••"
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                   />
-                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
                     <EyeIcon open={showConfirm} />
                   </button>
                 </div>
