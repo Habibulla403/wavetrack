@@ -1,19 +1,37 @@
 import { useState } from "react";
 import { login, register } from "../api";
 
+function EyeIcon({ open }) {
+  return open ? (
+    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" viewBox="0 0 24 24">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+    </svg>
+  ) : (
+    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" viewBox="0 0 24 24">
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/>
+    </svg>
+  );
+}
+
 export default function AuthPage({ onAuth }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handle = async () => {
-    setLoading(true);
     setError("");
+    if (!isLogin && form.password !== form.confirm) {
+      setError("Passwords do not match!");
+      return;
+    }
+    setLoading(true);
     try {
       const data = isLogin
         ? await login({ email: form.email, password: form.password })
-        : await register(form);
+        : await register({ name: form.name, email: form.email, password: form.password });
       if (data.token) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data));
@@ -29,7 +47,7 @@ export default function AuthPage({ onAuth }) {
 
   return (
     <div className="min-h-screen bg-white flex">
-      {/* Left side - decorative */}
+      {/* Left side */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#0A0A0F] flex-col items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent" />
         <div className="relative z-10 text-center">
@@ -53,10 +71,9 @@ export default function AuthPage({ onAuth }) {
         </div>
       </div>
 
-      {/* Right side - form */}
+      {/* Right side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center mx-auto mb-3">
               <svg width="22" height="22" fill="none" viewBox="0 0 16 16">
@@ -73,7 +90,6 @@ export default function AuthPage({ onAuth }) {
             {isLogin ? "Welcome back! Please enter your details." : "Start distributing your music today."}
           </p>
 
-          {/* Google button */}
           <button className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all mb-3">
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -109,6 +125,7 @@ export default function AuthPage({ onAuth }) {
                 />
               </div>
             )}
+
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1.5">Email address</label>
               <input
@@ -119,19 +136,51 @@ export default function AuthPage({ onAuth }) {
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
               />
             </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-gray-700">Password</label>
                 {isLogin && <button className="text-sm text-emerald-600 hover:text-emerald-700">Forgot password?</button>}
               </div>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-              />
+              <div className="relative">
+                <input
+                  type={showPass ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <EyeIcon open={showPass} />
+                </button>
+              </div>
             </div>
+
+            {!isLogin && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    value={form.confirm}
+                    onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+                    placeholder="••••••••"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <EyeIcon open={showConfirm} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {error && (
               <p className="text-red-500 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</p>
@@ -148,7 +197,10 @@ export default function AuthPage({ onAuth }) {
 
           <p className="text-center text-sm text-gray-500 mt-6">
             {isLogin ? "Not a member? " : "Already a member? "}
-            <button onClick={() => { setIsLogin(!isLogin); setError(""); }} className="text-emerald-600 font-medium hover:text-emerald-700">
+            <button
+              onClick={() => { setIsLogin(!isLogin); setError(""); setForm({ name: "", email: "", password: "", confirm: "" }); }}
+              className="text-emerald-600 font-medium hover:text-emerald-700"
+            >
               {isLogin ? "Sign up" : "Sign in"}
             </button>
           </p>
