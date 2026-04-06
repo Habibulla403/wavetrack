@@ -16,10 +16,11 @@ function SongCover({ color, coverUrl }) {
   );
 }
 
-export default function SongTable({ limit, showHeader = true, refresh }) {
+export default function SongTable({ limit, showHeader = true, refresh, onPlaySong }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(null);
+  const [playing, setPlaying] = useState(null);
 
   const loadSongs = async () => {
     setLoading(true);
@@ -41,6 +42,12 @@ export default function SongTable({ limit, showHeader = true, refresh }) {
     await deleteSong(id, token);
     setSongs(s => s.filter(x => x._id !== id));
     setMenuOpen(null);
+  };
+
+  const handlePlay = (song) => {
+    if (!song.audioUrl) return alert("No audio file available.");
+    setPlaying(song._id);
+    if (onPlaySong) onPlaySong(song);
   };
 
   const display = limit ? songs.slice(0, limit) : songs;
@@ -79,9 +86,28 @@ export default function SongTable({ limit, showHeader = true, refresh }) {
               const sc = statusConfig[song.status] || statusConfig.draft;
               const colors = ["emerald", "amber", "purple", "blue", "pink", "gray"];
               const color = colors[idx % colors.length];
+              const isPlaying = playing === song._id;
               return (
                 <tr key={song._id} className="border-b border-white/[0.03] hover:bg-white/[0.025] group transition-colors">
-                  <td className="px-5 py-3.5 text-sm text-white/20 w-10">{idx + 1}</td>
+                  <td className="px-5 py-3.5 w-10">
+                    <div className="relative w-6 h-6 flex items-center justify-center">
+                      <span className="text-sm text-white/20 group-hover:hidden">{idx + 1}</span>
+                      <button
+                        onClick={() => handlePlay(song)}
+                        className="hidden group-hover:flex w-6 h-6 items-center justify-center"
+                      >
+                        {isPlaying ? (
+                          <svg width="14" height="14" fill="#34d399" viewBox="0 0 24 24">
+                            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" fill="white" viewBox="0 0 24 24">
+                            <polygon points="5,3 19,12 5,21"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <SongCover color={color} coverUrl={song.coverUrl} />
@@ -114,10 +140,10 @@ export default function SongTable({ limit, showHeader = true, refresh }) {
                     {menuOpen === song._id && (
                       <div className="absolute right-4 top-12 z-10 w-40 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-xl py-1 overflow-hidden">
                         {song.audioUrl && (
-                          <a href={song.audioUrl} target="_blank" rel="noreferrer"
-                            className="w-full text-left px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                          <button onClick={() => { handlePlay(song); setMenuOpen(null); }}
+                            className="w-full text-left px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors">
                             Play song
-                          </a>
+                          </button>
                         )}
                         <div className="my-1 border-t border-white/5" />
                         <button onClick={() => handleDelete(song._id)}
@@ -141,7 +167,9 @@ export default function SongTable({ limit, showHeader = true, refresh }) {
           const colors = ["emerald", "amber", "purple", "blue", "pink", "gray"];
           return (
             <div key={song._id} className="flex items-center gap-3 px-4 py-3.5">
-              <SongCover color={colors[idx % colors.length]} coverUrl={song.coverUrl} />
+              <button onClick={() => handlePlay(song)} className="flex-shrink-0">
+                <SongCover color={colors[idx % colors.length]} coverUrl={song.coverUrl} />
+              </button>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-white truncate">{song.title}</div>
                 <div className="text-[12px] text-white/30">{song.genre || "—"}</div>
