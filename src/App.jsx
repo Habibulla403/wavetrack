@@ -5,6 +5,7 @@ import MyMusic from "./components/MyMusic";
 import Distribution from "./components/Distribution";
 import Analytics from "./components/Analytics";
 import AuthPage from "./components/AuthPage";
+import Profile from "./components/Profile";
 
 export default function App() {
   const [activePage, setActivePage] = useState("dashboard");
@@ -24,6 +25,8 @@ export default function App() {
     setUser(null);
   };
 
+  const handleUserUpdate = (updated) => setUser(updated);
+
   if (!user) return <AuthPage onAuth={handleAuth} />;
 
   const pages = {
@@ -31,6 +34,7 @@ export default function App() {
     music: <MyMusic user={user} />,
     distribution: <Distribution />,
     analytics: <Analytics />,
+    profile: <Profile user={user} onUpdate={handleUserUpdate} />,
   };
 
   return (
@@ -52,7 +56,9 @@ export default function App() {
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-[#0A0A0F] sticky top-0 z-10">
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-white/5">
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <line x1="3" y1="6" x2="17" y2="6" /><line x1="3" y1="12" x2="17" y2="12" /><line x1="3" y1="18" x2="17" y2="18" />
+              <line x1="3" y1="6" x2="17" y2="6" />
+              <line x1="3" y1="12" x2="17" y2="12" />
+              <line x1="3" y1="18" x2="17" y2="18" />
             </svg>
           </button>
           <span className="font-semibold text-[15px] tracking-tight">WaveTrack</span>
