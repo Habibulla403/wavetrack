@@ -6,28 +6,35 @@ import Distribution from "./components/Distribution";
 import Analytics from "./components/Analytics";
 import AuthPage from "./components/AuthPage";
 import Profile from "./components/Profile";
+import LandingPage from "./components/LandingPage";
 
 export default function App() {
   const [activePage, setActivePage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
     if (saved) setUser(JSON.parse(saved));
   }, []);
 
-  const handleAuth = (userData) => setUser(userData);
+  const handleAuth = (userData) => {
+    setUser(userData);
+    setShowAuth(false);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    setShowAuth(false);
   };
 
   const handleUserUpdate = (updated) => setUser(updated);
 
-  if (!user) return <AuthPage onAuth={handleAuth} />;
+  if (!user && !showAuth) return <LandingPage onGetStarted={() => setShowAuth(true)} />;
+  if (!user && showAuth) return <AuthPage onAuth={handleAuth} />;
 
   const pages = {
     dashboard: <Dashboard user={user} />,
