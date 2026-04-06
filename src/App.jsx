@@ -7,12 +7,14 @@ import Analytics from "./components/Analytics";
 import AuthPage from "./components/AuthPage";
 import Profile from "./components/Profile";
 import LandingPage from "./components/LandingPage";
+import SongPlayer from "./components/SongPlayer";
 
 export default function App() {
   const [activePage, setActivePage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [currentSong, setCurrentSong] = useState(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -37,8 +39,8 @@ export default function App() {
   if (!user && showAuth) return <AuthPage onAuth={handleAuth} />;
 
   const pages = {
-    dashboard: <Dashboard user={user} />,
-    music: <MyMusic user={user} />,
+    dashboard: <Dashboard user={user} onPlaySong={setCurrentSong} />,
+    music: <MyMusic user={user} onPlaySong={setCurrentSong} />,
     distribution: <Distribution />,
     analytics: <Analytics />,
     profile: <Profile user={user} onUpdate={handleUserUpdate} />,
@@ -59,7 +61,7 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 overflow-y-auto lg:ml-0">
+      <main className={`flex-1 overflow-y-auto lg:ml-0 ${currentSong ? "pb-24" : ""}`}>
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-[#0A0A0F] sticky top-0 z-10">
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-white/5">
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -74,6 +76,10 @@ export default function App() {
           {pages[activePage]}
         </div>
       </main>
+
+      {currentSong && (
+        <SongPlayer song={currentSong} onClose={() => setCurrentSong(null)} />
+      )}
     </div>
   );
 }
