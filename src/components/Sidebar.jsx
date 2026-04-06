@@ -33,6 +33,14 @@ const navItems = [
       </svg>
     )
   },
+  {
+    id: "profile", label: "Profile",
+    icon: (
+      <svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+        <circle cx="8.5" cy="5.5" r="3" /><path d="M2 14.5c0-3.5 13-3.5 13 0" />
+      </svg>
+    )
+  },
 ];
 
 export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, onLogout }) {
@@ -99,7 +107,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
           </svg>
           Logout
         </button>
-        <div className="mt-2 mx-0 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <div className="mt-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
           <p className="text-[11px] text-emerald-400 font-medium">Upgrade to Pro</p>
           <p className="text-[10px] text-white/30 mt-0.5">Unlimited uploads + analytics</p>
         </div>
