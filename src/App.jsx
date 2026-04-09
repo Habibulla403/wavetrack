@@ -39,7 +39,7 @@ export default function App() {
   if (!user && showAuth) return <AuthPage onAuth={handleAuth} />;
 
   const pages = {
-    dashboard: <Dashboard user={user} onPlaySong={setCurrentSong} />,
+    dashboard: <Dashboard user={user} onPlaySong={setCurrentSong} setActivePage={setActivePage} />,
     music: <MyMusic user={user} onPlaySong={setCurrentSong} />,
     distribution: <Distribution />,
     analytics: <Analytics />,
@@ -62,7 +62,8 @@ export default function App() {
       />
 
       <main className={`flex-1 overflow-y-auto lg:ml-0 ${currentSong ? "pb-24" : ""}`}>
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-[#0A0A0F] sticky top-0 z-10">
+        {/* Mobile top bar */}
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-[#0A0A0F] sticky top-0 z-10 backdrop-blur">
           <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-white/5">
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <line x1="3" y1="6" x2="17" y2="6" />
@@ -70,7 +71,14 @@ export default function App() {
               <line x1="3" y1="18" x2="17" y2="18" />
             </svg>
           </button>
-          <span className="font-semibold text-[15px] tracking-tight">WaveTrack</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <svg width="12" height="12" fill="none" viewBox="0 0 16 16">
+                <path d="M1.5 8 Q3.5 4 5.5 8 Q7.5 12 9.5 8 Q11.5 4 13.5 8" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span className="font-semibold text-[15px] tracking-tight">WaveTrack</span>
+          </div>
         </div>
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           {pages[activePage]}
