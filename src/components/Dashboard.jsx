@@ -1,13 +1,51 @@
+import { useState, useEffect } from "react";
 import MetricCard from "./MetricCard";
 import UploadSection from "./UploadSection";
 import SongTable from "./SongTable";
-import { songs, platforms } from "../data";
+import { platforms } from "../data";
+import { getSongs, getStats } from "../api";
 
-const totalStreams = songs.reduce((a, s) => a + s.streams, 0);
-const totalEarnings = songs.reduce((a, s) => a + s.earnings, 0);
-const liveSongs = songs.filter(s => s.status === "live").length;
+const weeklyData = [
+  { day: "Mon", streams: 320 },
+  { day: "Tue", streams: 580 },
+  { day: "Wed", streams: 420 },
+  { day: "Thu", streams: 890 },
+  { day: "Fri", streams: 1100 },
+  { day: "Sat", streams: 760 },
+  { day: "Sun", streams: 640 },
+];
+const maxStreams = Math.max(...weeklyData.map((d) => d.streams));
 
-function StreamsBar() {
+function MiniChart() {
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-white">Weekly Streams</h2>
+        <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+          +18% this week
+        </span>
+      </div>
+      <div className="flex items-end gap-1.5 h-20">
+        {weeklyData.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1 group cursor-pointer">
+            <div className="w-full relative flex items-end justify-center" style={{ height: "64px" }}>
+              <div
+                className="w-full rounded-t-md transition-all duration-300 group-hover:opacity-100 opacity-70"
+                style={{
+                  height: `${(d.streams / maxStreams) * 100}%`,
+                  background: i === 4 ? "linear-gradient(to top, #059669, #34d399)" : "rgba(52,211,153,0.25)",
+                }}
+              />
+            </div>
+            <span className="text-[9px] text-white/20 group-hover:text-white/50 transition-colors">{d.day}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StreamsBar({ totalStreams }) {
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
       <div className="flex items-center justify-between mb-4">
@@ -26,7 +64,10 @@ function StreamsBar() {
                 <span className="text-[12px] text-white/40">{p.pct}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${p.pct}%`, backgroundColor: p.color }} />
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${p.pct}%`, backgroundColor: p.color }}
+                />
               </div>
             </div>
           </div>
@@ -49,7 +90,9 @@ function RecentActivity() {
       <div className="space-y-3">
         {events.map((e, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className={`text-[13px] mt-0.5 flex-shrink-0 ${e.color}`}>{e.icon}</span>
+            <div className={`w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5 ${e.color}`}>
+              {e.icon}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] text-white/60 leading-tight">{e.text}</p>
               <p className="text-[11px] text-white/25 mt-0.5">{e.time}</p>
@@ -61,15 +104,47 @@ function RecentActivity() {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ user, onPlaySong, setActivePage }) {
+  const [stats, setStats] = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
+  const [songRefresh, setSongRefresh] = useState(0);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    getStats(token).then(setStats).catch(() => {});
+  }, [songRefresh]);
+
+  const totalStreams = stats.totalStreams || 0;
+  const totalEarnings = stats.totalEarnings || 0;
+  const liveSongs = stats.liveSongs || 0;
+  const totalSongs = stats.total || 0;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
-        <p className="text-white/40 text-sm mt-1">Welcome back, Arif. Here's your music overview.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+          <p className="text-white/40 text-sm mt-1">
+            Welcome back, {user?.name?.split(" ")[0] || "Artist"}. Here's your music overview.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActivePage && setActivePage("music")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-400 text-white transition-all border border-white/[0.06]"
+          >
+            <span>⬆</span> Upload Song
+          </button>
+          <button
+            onClick={() => setActivePage && setActivePage("analytics")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/[0.05] hover:bg-white/[0.08] text-white/70 transition-all border border-white/[0.06]"
+          >
+            <span>📊</span> Analytics
+          </button>
+        </div>
       </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard label="Total Songs" value={songs.length} sub={`${liveSongs} live`}
+        <MetricCard label="Total Songs" value={totalSongs} sub={`${liveSongs} live`}
           icon={<svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M2 11V6L11 4V9"/><circle cx="2" cy="11" r="1.5"/><circle cx="11" cy="9" r="1.5"/></svg>} />
         <MetricCard label="Total Streams" value={totalStreams.toLocaleString()} sub="+12% this week"
           icon={<svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><polyline points="1,10 3.5,6 6,8 9,3.5 12,5.5"/></svg>} />
@@ -78,13 +153,17 @@ export default function Dashboard() {
         <MetricCard label="Est. Earnings" value={`$${totalEarnings.toFixed(2)}`} sub="Payouts coming soon" accent
           icon={<svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5V5m0 4v.5M5.5 8.5a1.5 1.5 0 003 0c0-.83-.67-1.5-1.5-1.5S5.5 6.33 5.5 5.5a1.5 1.5 0 013 0"/></svg>} />
       </div>
-      <UploadSection />
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <MiniChart />
+        <RecentActivity />
+      </div>
+
+      <UploadSection onSongAdded={() => setSongRefresh((r) => r + 1)} />
+
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-5">
-        <SongTable limit={4} />
-        <div className="space-y-4">
-          <StreamsBar />
-          <RecentActivity />
-        </div>
+        <SongTable limit={4} refresh={songRefresh} onPlaySong={onPlaySong} />
+        <StreamsBar totalStreams={totalStreams} />
       </div>
     </div>
   );
