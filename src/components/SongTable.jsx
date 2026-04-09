@@ -16,7 +16,7 @@ function SongCover({ color, coverUrl }) {
   );
 }
 
-export default function SongTable({ limit, showHeader = true, refresh, onPlaySong }) {
+export default function SongTable({ limit, showHeader = true, refresh, onPlaySong, filterStatus }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(null);
@@ -40,7 +40,7 @@ export default function SongTable({ limit, showHeader = true, refresh, onPlaySon
     if (!confirm("Delete this song?")) return;
     const token = localStorage.getItem("token");
     await deleteSong(id, token);
-    setSongs(s => s.filter(x => x._id !== id));
+    setSongs((s) => s.filter((x) => x._id !== id));
     setMenuOpen(null);
   };
 
@@ -50,7 +50,8 @@ export default function SongTable({ limit, showHeader = true, refresh, onPlaySon
     if (onPlaySong) onPlaySong(song);
   };
 
-  const display = limit ? songs.slice(0, limit) : songs;
+  const filtered = filterStatus ? songs.filter((s) => s.status === filterStatus) : songs;
+  const display = limit ? filtered.slice(0, limit) : filtered;
 
   if (loading) return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-12 text-center">
@@ -67,7 +68,7 @@ export default function SongTable({ limit, showHeader = true, refresh, onPlaySon
       {showHeader && (
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-base font-semibold text-white">Your Songs</h2>
-          <span className="text-[12px] text-white/30">{songs.length} tracks</span>
+          <span className="text-[12px] text-white/30">{filtered.length} track{filtered.length !== 1 ? "s" : ""}</span>
         </div>
       )}
 
@@ -92,17 +93,14 @@ export default function SongTable({ limit, showHeader = true, refresh, onPlaySon
                   <td className="px-5 py-3.5 w-10">
                     <div className="relative w-6 h-6 flex items-center justify-center">
                       <span className="text-sm text-white/20 group-hover:hidden">{idx + 1}</span>
-                      <button
-                        onClick={() => handlePlay(song)}
-                        className="hidden group-hover:flex w-6 h-6 items-center justify-center"
-                      >
+                      <button onClick={() => handlePlay(song)} className="hidden group-hover:flex w-6 h-6 items-center justify-center">
                         {isPlaying ? (
                           <svg width="14" height="14" fill="#34d399" viewBox="0 0 24 24">
-                            <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                            <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
                           </svg>
                         ) : (
                           <svg width="14" height="14" fill="white" viewBox="0 0 24 24">
-                            <polygon points="5,3 19,12 5,21"/>
+                            <polygon points="5,3 19,12 5,21" />
                           </svg>
                         )}
                       </button>
@@ -180,8 +178,11 @@ export default function SongTable({ limit, showHeader = true, refresh, onPlaySon
         })}
       </div>
 
-      {!loading && songs.length === 0 && (
-        <div className="py-12 text-center text-white/20 text-sm">No songs yet. Upload your first track!</div>
+      {!loading && display.length === 0 && (
+        <div className="py-12 text-center">
+          <div className="text-3xl mb-3">🎵</div>
+          <p className="text-white/30 text-sm">No songs yet. Upload your first track!</p>
+        </div>
       )}
     </div>
   );
