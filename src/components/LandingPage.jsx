@@ -177,21 +177,105 @@ export default function LandingPage({ onGetStarted }) {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/[0.05]">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <svg width="12" height="12" fill="none" viewBox="0 0 16 16">
-                <path d="M1.5 8 Q3.5 4 5.5 8 Q7.5 12 9.5 8 Q11.5 4 13.5 8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+      <footer className="border-t border-white/[0.05] pt-16 pb-8 px-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Top section - logo + columns */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-10 mb-12">
+            {/* Brand */}
+            <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+                    <path d="M1.5 8 Q3.5 4 5.5 8 Q7.5 12 9.5 8 Q11.5 4 13.5 8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <span className="font-bold text-[17px] tracking-tight text-white">WaveTrack</span>
+              </div>
+              <p className="text-white/35 text-sm leading-relaxed">
+                Distribute your music to 150+ platforms worldwide. Keep 100% of your royalties.
+              </p>
             </div>
-            <span className="text-sm font-semibold text-white/60">WaveTrack</span>
+
+            {/* Company */}
+            <div>
+              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">Company</h4>
+              <ul className="space-y-3">
+                {["About Us", "Blog / News", "Careers", "Artists For Change", "Affiliate Program"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-white/40 hover:text-white transition-colors">{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">Product</h4>
+              <ul className="space-y-3">
+                {["Plans & Pricing", "Distribution", "Analytics", "HyperFollow", "Mobile App", "Direct Sales"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-white/40 hover:text-white transition-colors">{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Partner */}
+            <div>
+              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">Partner</h4>
+              <ul className="space-y-3">
+                {["Student Discount", "Education Faculty", "Influencer Program", "Label Program"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-white/40 hover:text-white transition-colors">{item}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Help */}
+            <div>
+              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">Help</h4>
+              <ul className="space-y-3">
+                {["Support Center", "Contact Us", "Distribution Agreement", "Sitemap"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-sm text-white/40 hover:text-white transition-colors">{item}</a>
+                  </li>
+                ))}
+              </ul>
+              {/* App store badges */}
+              <div className="mt-6 space-y-2">
+                <a href="#" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.07] transition-colors w-fit">
+                  <svg width="14" height="14" fill="white" viewBox="0 0 14 14" opacity="0.6"><path d="M7 0C3.13 0 0 3.13 0 7s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm3.5 7.7l-5 3c-.18.11-.4-.02-.4-.23V3.53c0-.21.22-.34.4-.23l5 3c.17.1.17.37 0 .4z"/></svg>
+                  <span className="text-[11px] text-white/50">iOS App</span>
+                </a>
+                <a href="#" className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.07] transition-colors w-fit">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" opacity="0.6"><path d="M3 3l7.5 9L3 21h2l6.5-7.8L17 21h4L13.5 12 21 3h-2l-6 7.2L7 3H3z" fill="white"/></svg>
+                  <span className="text-[11px] text-white/50">Android App</span>
+                </a>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-white/25">© 2026 WaveTrack. All rights reserved.</p>
-          <div className="flex items-center gap-6 text-sm text-white/30">
-            <a href="#" className="hover:text-white/60 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white/60 transition-colors">Terms</a>
-            <a href="#" className="hover:text-white/60 transition-colors">Contact</a>
+
+          {/* Language selector row */}
+          <div className="flex flex-wrap gap-1.5 mb-8 pb-8 border-b border-white/[0.05]">
+            {["English", "বাংলা", "Español", "Français", "Deutsch", "Português", "日本語", "한국어", "العربية", "हिन्दी", "Türkçe", "Italiano"].map((lang, i) => (
+              <button
+                key={lang}
+                className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${i === 0 ? "bg-white/10 text-white/70" : "text-white/25 hover:text-white/50 hover:bg-white/5"}`}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
+
+          {/* Bottom row */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-[13px] text-white/25">© WaveTrack 2026</p>
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+              {["Privacy Policy", "Cookie Policy", "Terms of Use", "Distribution Agreement"].map((item) => (
+                <a key={item} href="#" className="text-[12px] text-white/25 hover:text-white/50 transition-colors">{item}</a>
+              ))}
+            </div>
           </div>
         </div>
       </footer>
