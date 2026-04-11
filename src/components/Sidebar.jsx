@@ -4,45 +4,27 @@ import UpgradeModal from "./UpgradeModal";
 const navItems = [
   {
     id: "dashboard", label: "Dashboard",
-    icon: (
-      <svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" /><rect x="10" y="1.5" width="5.5" height="5.5" rx="1.5" />
-        <rect x="1.5" y="10" width="5.5" height="5.5" rx="1.5" /><rect x="10" y="10" width="5.5" height="5.5" rx="1.5" />
-      </svg>
-    )
+    icon: (<svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5"/><rect x="10" y="1.5" width="5.5" height="5.5" rx="1.5"/><rect x="1.5" y="10" width="5.5" height="5.5" rx="1.5"/><rect x="10" y="10" width="5.5" height="5.5" rx="1.5"/></svg>)
   },
   {
     id: "music", label: "My Music",
-    icon: (
-      <svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-        <path d="M3 13V6.5L14 4V10.5" /><circle cx="3" cy="13" r="1.8" /><circle cx="14" cy="10.5" r="1.8" />
-      </svg>
-    )
+    icon: (<svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 13V6.5L14 4V10.5"/><circle cx="3" cy="13" r="1.8"/><circle cx="14" cy="10.5" r="1.8"/></svg>)
   },
   {
     id: "distribution", label: "Distribution",
-    icon: (
-      <svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="3" cy="8.5" r="1.8" /><circle cx="14" cy="3" r="1.8" /><circle cx="14" cy="14" r="1.8" />
-        <line x1="4.7" y1="7.6" x2="12.3" y2="3.9" /><line x1="4.7" y1="9.4" x2="12.3" y2="13.1" />
-      </svg>
-    )
+    icon: (<svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="3" cy="8.5" r="1.8"/><circle cx="14" cy="3" r="1.8"/><circle cx="14" cy="14" r="1.8"/><line x1="4.7" y1="7.6" x2="12.3" y2="3.9"/><line x1="4.7" y1="9.4" x2="12.3" y2="13.1"/></svg>)
   },
   {
     id: "analytics", label: "Analytics",
-    icon: (
-      <svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="1.5,13 5,8 8.5,10.5 12,5 15.5,7" />
-      </svg>
-    )
+    icon: (<svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="1.5,13 5,8 8.5,10.5 12,5 15.5,7"/></svg>)
   },
   {
     id: "profile", label: "Profile",
-    icon: (
-      <svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-        <circle cx="8.5" cy="5.5" r="3" /><path d="M2 14.5c0-3.5 13-3.5 13 0" />
-      </svg>
-    )
+    icon: (<svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="8.5" cy="5.5" r="3"/><path d="M2 14.5c0-3.5 13-3.5 13 0"/></svg>)
+  },
+  {
+    id: "settings", label: "Settings",
+    icon: (<svg width="17" height="17" fill="none" viewBox="0 0 17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8.5" cy="8.5" r="2.5"/><path d="M8.5 1v2M8.5 14v2M1 8.5h2M14 8.5h2M3.1 3.1l1.4 1.4M12.5 12.5l1.4 1.4M3.1 13.9l1.4-1.4M12.5 4.5l1.4-1.4"/></svg>)
   },
 ];
 
@@ -64,7 +46,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/30">
               <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-                <path d="M1.5 8 Q3.5 4 5.5 8 Q7.5 12 9.5 8 Q11.5 4 13.5 8" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
+                <path d="M1.5 8 Q3.5 4 5.5 8 Q7.5 12 9.5 8 Q11.5 4 13.5 8" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
               </svg>
             </div>
             <div>
@@ -75,25 +57,35 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <p className="text-[10px] font-semibold text-white/25 tracking-widest uppercase px-3 mb-3">Menu</p>
-          {navItems.map((item) => {
-            const active = activePage === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActivePage(item.id)}
-                className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 text-left
-                  ${active ? "bg-emerald-500/15 text-emerald-400 font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/5"}
-                `}
-              >
-                <span className={active ? "text-emerald-400" : "text-white/30"}>{item.icon}</span>
-                {item.label}
-                {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-              </button>
-            );
-          })}
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              // Settings কে Profile এর নিচে sub-item হিসেবে দেখাবে
+              const isSettings = item.id === "settings";
+              const active = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActivePage(item.id)}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 text-left
+                    ${isSettings ? "pl-7" : ""}
+                    ${active
+                      ? "bg-emerald-500/15 text-emerald-400 font-medium"
+                      : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                    }
+                  `}
+                >
+                  <span className={`${active ? "text-emerald-400" : "text-white/30"} flex-shrink-0`}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                  {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"/>}
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Bottom user section */}
@@ -104,9 +96,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
                 {initials}
               </div>
               {isPro && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center text-[8px]">
-                  👑
-                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center text-[8px]">👑</div>
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -120,22 +110,17 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
             </div>
           </div>
 
-          <button
-            onClick={onLogout}
-            className="w-full px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all text-left flex items-center gap-2"
-          >
+          <button onClick={onLogout}
+            className="w-full px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all text-left flex items-center gap-2">
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-              <path d="M9 2H3a1 1 0 00-1 1v10a1 1 0 001 1h6M12 9l3-3-3-3M7 9h8" />
+              <path d="M9 2H3a1 1 0 00-1 1v10a1 1 0 001 1h6M12 9l3-3-3-3M7 9h8"/>
             </svg>
             Logout
           </button>
 
-          {/* Upgrade to Pro button */}
           {!isPro && (
-            <button
-              onClick={() => setShowUpgrade(true)}
-              className="w-full p-3 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/5 border border-emerald-500/25 hover:from-emerald-500/25 hover:to-teal-500/10 transition-all text-left group"
-            >
+            <button onClick={() => setShowUpgrade(true)}
+              className="w-full p-3 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/5 border border-emerald-500/25 hover:from-emerald-500/25 hover:to-teal-500/10 transition-all text-left group">
               <p className="text-[11px] text-emerald-400 font-semibold group-hover:text-emerald-300 transition-colors">✨ Upgrade to Pro</p>
               <p className="text-[10px] text-white/30 mt-0.5">Unlimited uploads + analytics</p>
             </button>
@@ -150,10 +135,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
         </div>
       </aside>
 
-      {/* Upgrade Modal */}
-      {showUpgrade && (
-        <UpgradeModal onClose={() => setShowUpgrade(false)} user={user} />
-      )}
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} user={user} />}
     </>
   );
 }
