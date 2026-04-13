@@ -89,44 +89,54 @@ function StatCard({ label, value, icon, color = "text-white" }) {
   );
 }
 
-function SocialLinks({ links, onChange }) {
-  const splatforms = [
-    { key: "spotify",   label: "Spotify Artist", placeholder: "https://open.spotify.com/artist/...", icon: "🎵" },
-    { key: "instagram", label: "Instagram",       placeholder: "https://instagram.com/...",           icon: "📷" },
-    { key: "twitter",   label: "Twitter / X",     placeholder: "https://twitter.com/...",             icon: "🐦" },
-    { key: "youtube",   label: "YouTube",          placeholder: "https://youtube.com/...",             icon: "▶️" },
-  ];
+// Social platform config
+const SOCIAL_PLATFORMS = [
+  { key: "spotify",   label: "Spotify",   placeholder: "https://open.spotify.com/artist/...", icon: "🎵", color: "text-green-400" },
+  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/...",            icon: "📷", color: "text-pink-400"  },
+  { key: "twitter",   label: "Twitter/X", placeholder: "https://twitter.com/...",              icon: "🐦", color: "text-sky-400"   },
+  { key: "youtube",   label: "YouTube",   placeholder: "https://youtube.com/...",              icon: "▶️", color: "text-red-400"   },
+  { key: "tiktok",    label: "TikTok",    placeholder: "https://tiktok.com/@...",              icon: "🎶", color: "text-white/60"  },
+];
+
+function SocialLinksDisplay({ links }) {
+  const active = SOCIAL_PLATFORMS.filter(p => links[p.key]);
+  if (!active.length) return null;
   return (
-    <div className="space-y-3">
-      {splatforms.map(p => (
-        <div key={p.key} className="flex items-center gap-3">
-          <span className="text-lg w-7 text-center flex-shrink-0">{p.icon}</span>
-          <div className="flex-1">
-            <label className="text-[10px] text-white/25 uppercase tracking-wide block mb-1">{p.label}</label>
-            <input value={links[p.key] || ""} onChange={e => onChange({ ...links, [p.key]: e.target.value })}
-              placeholder={p.placeholder}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/15 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-          </div>
-        </div>
+    <div className="flex flex-wrap gap-2">
+      {active.map(p => (
+        <a key={p.key} href={links[p.key]} target="_blank" rel="noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] transition-all text-[12px] text-white/50 hover:text-white/80">
+          <span>{p.icon}</span>
+          <span>{p.label}</span>
+        </a>
       ))}
     </div>
   );
 }
 
+// Word count helper
+function wordCount(str) {
+  return str.trim() ? str.trim().split(/\s+/).length : 0;
+}
+
 export default function Profile({ user, onUpdate, onNavigate }) {
-  const [stats,      setStats]      = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
-  const [songs,      setSongs]      = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [editing,    setEditing]    = useState(false);
-  const [activeTab,  setActiveTab]  = useState("overview");
-  const [saved,      setSaved]      = useState(false);
-  const [saving,     setSaving]     = useState(false);
+  const [stats,     setStats]     = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
+  const [songs,     setSongs]     = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [editing,   setEditing]   = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [saved,     setSaved]     = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const [bioError,  setBioError]  = useState("");
 
   const [form, setForm] = useState({
-    name: user?.name || "", bio: user?.bio || "",
-    location: user?.location || "", website: user?.website || "",
-    genre: user?.genre || "", socialLinks: user?.socialLinks || {},
-    avatarUrl: user?.avatarUrl || "",
+    name:        user?.name        || "",
+    bio:         user?.bio         || "",
+    location:    user?.location    || "",
+    website:     user?.website     || "",
+    genre:       user?.genre       || "",
+    socialLinks: user?.socialLinks || {},
+    avatarUrl:   user?.avatarUrl   || "",
   });
 
   const initials = user?.name
@@ -146,7 +156,21 @@ export default function Profile({ user, onUpdate, onNavigate }) {
     });
   }, []);
 
+  const handleBioChange = (val) => {
+    const wc = wordCount(val);
+    if (wc > 200) {
+      setBioError(`সর্বোচ্চ ২০০ শব্দ (এখন ${wc})`);
+    } else {
+      setBioError("");
+    }
+    setForm(f => ({ ...f, bio: val }));
+  };
+
   const handleSave = async () => {
+    if (wordCount(form.bio) > 200) {
+      setBioError("বায়ো সর্বোচ্চ ২০০ শব্দ হতে পারবে");
+      return;
+    }
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
@@ -169,7 +193,7 @@ export default function Profile({ user, onUpdate, onNavigate }) {
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : "2026";
 
-  // Only 3 tabs — settings tab removed (moved to Settings page)
+  // Only 3 tabs — settings tab completely removed
   const tabs = ["overview", "songs", "social"];
 
   return (
@@ -187,7 +211,6 @@ export default function Profile({ user, onUpdate, onNavigate }) {
               Profile saved!
             </div>
           )}
-          {/* Quick link to Settings page */}
           <button
             onClick={() => onNavigate && onNavigate("settings")}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/80 border border-white/[0.06] text-sm font-medium transition-all">
@@ -242,16 +265,30 @@ export default function Profile({ user, onUpdate, onNavigate }) {
             </button>
           </div>
 
+          {/* Edit mode */}
           {editing ? (
             <div className="space-y-3">
-              <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
-                rows={3} placeholder="Tell people about yourself..."
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all resize-none"/>
+              {/* Bio with word counter */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] text-white/30 uppercase tracking-wide">Bio</label>
+                  <span className={`text-[10px] font-mono ${wordCount(form.bio) > 200 ? "text-red-400" : "text-white/25"}`}>
+                    {wordCount(form.bio)}/200 শব্দ
+                  </span>
+                </div>
+                <textarea value={form.bio} onChange={e => handleBioChange(e.target.value)}
+                  rows={4} placeholder="Tell people about yourself... (সর্বোচ্চ ২০০ শব্দ)"
+                  className={`w-full bg-white/[0.04] border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all resize-none ${
+                    bioError ? "border-red-500/50 focus:border-red-500" : "border-white/[0.08] focus:border-emerald-500/50"
+                  }`}/>
+                {bioError && <p className="text-[11px] text-red-400 mt-1">{bioError}</p>}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Location</label>
                   <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })}
-                    placeholder="City, Country"
+                    placeholder="যেমন: Dhaka, Bangladesh"
                     className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
                 </div>
                 <div>
@@ -271,22 +308,48 @@ export default function Profile({ user, onUpdate, onNavigate }) {
                     className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
                 </div>
               </div>
+
+              {/* Social links inline in edit mode */}
+              <div>
+                <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-2">Social Links</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SOCIAL_PLATFORMS.map(p => (
+                    <div key={p.key} className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2">
+                      <span className="text-base flex-shrink-0">{p.icon}</span>
+                      <input
+                        value={form.socialLinks[p.key] || ""}
+                        onChange={e => setForm({ ...form, socialLinks: { ...form.socialLinks, [p.key]: e.target.value } })}
+                        placeholder={p.label}
+                        className="flex-1 bg-transparent text-sm text-white placeholder-white/20 focus:outline-none min-w-0"/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-2">
-                <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
+                <button onClick={handleSave} disabled={saving || !!bioError}
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
-                <button onClick={() => setEditing(false)} className="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium text-white/50 transition-all">Cancel</button>
+                <button onClick={() => { setEditing(false); setBioError(""); }}
+                  className="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium text-white/50 transition-all">Cancel</button>
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            /* View mode */
+            <div className="space-y-3">
               {user?.bio && <p className="text-white/60 text-sm leading-relaxed">{user.bio}</p>}
+
+              {/* Metadata row */}
               <div className="flex flex-wrap gap-3 text-[12px] text-white/35">
                 {user?.location && <span className="flex items-center gap-1">📍 {user.location}</span>}
                 {user?.genre    && <span className="flex items-center gap-1">🎵 {user.genre}</span>}
                 {user?.website  && <a href={user.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300">🔗 Website</a>}
                 <span className="flex items-center gap-1">📅 Joined {joinDate}</span>
               </div>
+
+              {/* Social links displayed below bio */}
+              <SocialLinksDisplay links={user?.socialLinks || {}} />
             </div>
           )}
         </div>
@@ -402,8 +465,22 @@ export default function Profile({ user, onUpdate, onNavigate }) {
       {activeTab === "social" && (
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
           <h2 className="text-sm font-semibold text-white mb-1">Social Links</h2>
-          <p className="text-white/30 text-[12px] mb-5">These links appear on your public profile</p>
-          <SocialLinks links={form.socialLinks} onChange={(links) => setForm({ ...form, socialLinks: links })}/>
+          <p className="text-white/30 text-[12px] mb-5">These links appear on your public profile below the bio</p>
+          <div className="space-y-3">
+            {SOCIAL_PLATFORMS.map(p => (
+              <div key={p.key} className="flex items-center gap-3">
+                <span className="text-lg w-7 text-center flex-shrink-0">{p.icon}</span>
+                <div className="flex-1">
+                  <label className="text-[10px] text-white/25 uppercase tracking-wide block mb-1">{p.label}</label>
+                  <input
+                    value={form.socialLinks[p.key] || ""}
+                    onChange={e => setForm({ ...form, socialLinks: { ...form.socialLinks, [p.key]: e.target.value } })}
+                    placeholder={p.placeholder}
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/15 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                </div>
+              </div>
+            ))}
+          </div>
           <button onClick={handleSave} disabled={saving}
             className="mt-5 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
             {saving ? "Saving..." : "Save Links"}
