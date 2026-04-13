@@ -310,7 +310,8 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
                     { key: "spotify",   label: "Spotify Artist", placeholder: "https://open.spotify.com/artist/...", icon: "🎵" },
                     { key: "instagram", label: "Instagram",       placeholder: "https://instagram.com/...",           icon: "📷" },
                     { key: "twitter",   label: "Twitter / X",     placeholder: "https://twitter.com/...",             icon: "🐦" },
-                    { key: "youtube",   label: "YouTube",          placeholder: "https://youtube.com/...",             icon: "▶️" },
+                    { key: "youtube",   label: "YouTube",   placeholder: "https://youtube.com/...",   icon: "▶️" },
+                    { key: "tiktok",    label: "TikTok",    placeholder: "https://tiktok.com/@...",   icon: "🎶" },
                   ].map(p => (
                     <div key={p.key} className="flex items-center gap-3">
                       <span className="text-lg w-7 text-center flex-shrink-0">{p.icon}</span>
