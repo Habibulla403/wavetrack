@@ -9,7 +9,6 @@ import Profile from "./components/Profile";
 import Settings from "./components/Settings";
 import LandingPage from "./components/LandingPage";
 import SongPlayer from "./components/SongPlayer";
-import SearchBar from "./components/SearchBar";
 
 export default function App() {
   const [activePage,   setActivePage]   = useState("dashboard");
@@ -85,10 +84,7 @@ export default function App() {
             <span className="font-bold text-[15px]">WaveTrack</span>
           </div>
 
-          {/* Search — center */}
-          <div className="flex-1 flex justify-center lg:justify-start">
-            <SearchBar setActivePage={setActivePage} />
-          </div>
+          <div className="flex-1" />
         </div>
 
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
