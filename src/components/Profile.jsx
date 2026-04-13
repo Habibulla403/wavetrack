@@ -7,7 +7,6 @@ const coverColors = {
   4: "from-pink-500 to-rose-600",    5: "from-zinc-500 to-zinc-700",
 };
 
-// Upload avatar to Cloudinary via backend
 async function uploadAvatarToCloudinary(file) {
   const reader = new FileReader();
   const base64 = await new Promise((res, rej) => {
@@ -34,7 +33,6 @@ function AvatarUpload({ initials, avatarUrl, onUpload }) {
 
   const handleFile = async (file) => {
     if (!file || !file.type.startsWith("image/")) return;
-    // Show local preview immediately
     setPreview(URL.createObjectURL(file));
     setUploading(true);
     try {
@@ -115,7 +113,7 @@ function SocialLinks({ links, onChange }) {
   );
 }
 
-export default function Profile({ user, onUpdate }) {
+export default function Profile({ user, onUpdate, onNavigate }) {
   const [stats,      setStats]      = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
   const [songs,      setSongs]      = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -148,7 +146,6 @@ export default function Profile({ user, onUpdate }) {
     });
   }, []);
 
-  // Save profile to backend
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -167,11 +164,13 @@ export default function Profile({ user, onUpdate }) {
     }
   };
 
-  const isPro     = user?.plan === "pro";
-  const joinDate  = user?.createdAt
+  const isPro    = user?.plan === "pro";
+  const joinDate = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : "2026";
-  const tabs = ["overview", "songs", "social", "settings"];
+
+  // Only 3 tabs — settings tab removed (moved to Settings page)
+  const tabs = ["overview", "songs", "social"];
 
   return (
     <div className="space-y-6">
@@ -181,12 +180,24 @@ export default function Profile({ user, onUpdate }) {
           <h1 className="text-2xl font-bold text-white tracking-tight">Artist Profile</h1>
           <p className="text-white/40 text-sm mt-1">Manage your public artist profile</p>
         </div>
-        {saved && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-sm font-medium">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,7 5,10 12,3"/></svg>
-            Profile saved!
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {saved && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-sm font-medium">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,7 5,10 12,3"/></svg>
+              Profile saved!
+            </div>
+          )}
+          {/* Quick link to Settings page */}
+          <button
+            onClick={() => onNavigate && onNavigate("settings")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/80 border border-white/[0.06] text-sm font-medium transition-all">
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            Settings
+          </button>
+        </div>
       </div>
 
       {/* Hero card */}
@@ -283,9 +294,9 @@ export default function Profile({ user, onUpdate }) {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Songs"   value={loading ? "—" : stats.total || 0}                          icon="🎵"/>
-        <StatCard label="Live Songs"    value={loading ? "—" : stats.liveSongs || 0}                      icon="🟢" color="text-emerald-400"/>
-        <StatCard label="Total Streams" value={loading ? "—" : (stats.totalStreams || 0).toLocaleString()} icon="▶️" color="text-blue-400"/>
+        <StatCard label="Total Songs"   value={loading ? "—" : stats.total || 0}                           icon="🎵"/>
+        <StatCard label="Live Songs"    value={loading ? "—" : stats.liveSongs || 0}                       icon="🟢" color="text-emerald-400"/>
+        <StatCard label="Total Streams" value={loading ? "—" : (stats.totalStreams || 0).toLocaleString()}  icon="▶️" color="text-blue-400"/>
         <StatCard label="Est. Earnings" value={loading ? "—" : `$${(stats.totalEarnings || 0).toFixed(2)}`} icon="💰" color="text-yellow-400"/>
       </div>
 
@@ -397,54 +408,6 @@ export default function Profile({ user, onUpdate }) {
             className="mt-5 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
             {saving ? "Saving..." : "Save Links"}
           </button>
-        </div>
-      )}
-
-      {/* Settings tab */}
-      {activeTab === "settings" && (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-            <h2 className="text-sm font-semibold text-white mb-4">Account Settings</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Display Name</label>
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"/>
-              </div>
-              <div>
-                <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Email</label>
-                <input value={user?.email || ""} disabled
-                  className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-white/30 cursor-not-allowed"/>
-              </div>
-              <button onClick={handleSave} disabled={saving}
-                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-            <h2 className="text-sm font-semibold text-white mb-4">Current Plan</h2>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-white font-semibold">{isPro ? "👑 Pro Plan" : "Free Plan"}</span>
-                </div>
-                <p className="text-white/30 text-sm">{isPro ? "All features unlocked" : "Up to 3 songs · 4 platforms"}</p>
-              </div>
-              {!isPro && (
-                <button className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-500/20">
-                  ✨ Upgrade to Pro
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-            <h2 className="text-sm font-semibold text-red-400 mb-2">Danger Zone</h2>
-            <p className="text-white/30 text-sm mb-4">Once you delete your account, there is no going back.</p>
-            <button className="px-5 py-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium transition-all">
-              Delete Account
-            </button>
-          </div>
         </div>
       )}
     </div>
