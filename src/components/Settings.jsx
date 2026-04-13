@@ -121,21 +121,24 @@ const TABS = [
   { id: "danger",        label: "Danger Zone",     icon: "⚠️" },
 ];
 
-export default function Settings({ user, onUpdate, onLogout }) {
-  const [tab,    setTab]    = useState("profile");
+export default function Settings({ user, onUpdate, onLogout, initialTab }) {
+  const [tab,    setTab]    = useState(initialTab || "profile");
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [billing, setBilling] = useState("annual");
   const [checkoutLoading, setCheckoutLoading] = useState(null);
 
-  // Notification prefs (stored locally)
+  // Sync if parent changes initialTab (e.g. navigating from Profile "Settings" button)
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
+
   const [notifs, setNotifs] = useState({
     songApproved: true, streamMilestone: true,
     payoutUpdate: false, newPlatform: false,
   });
 
-  // Profile form
   const [form, setForm] = useState({
     name: user?.name || "", bio: user?.bio || "",
     location: user?.location || "", genre: user?.genre || "",
@@ -167,7 +170,6 @@ export default function Settings({ user, onUpdate, onLogout }) {
     finally { setSaving(false); }
   };
 
-  // Stripe checkout
   const handleUpgrade = async (planId) => {
     setCheckoutLoading(planId);
     try {
@@ -332,26 +334,61 @@ export default function Settings({ user, onUpdate, onLogout }) {
             </div>
           )}
 
-          {/* ── ACCOUNT TAB ── */}
+          {/* ── ACCOUNT TAB ── (merged from Profile's settings tab) */}
           {tab === "account" && (
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-4">
-              <h2 className="text-sm font-semibold text-white">Account Information</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Display Name</label>
-                  <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"/>
+            <div className="space-y-4">
+              {/* Account Information */}
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-4">
+                <h2 className="text-sm font-semibold text-white">Account Information</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Display Name</label>
+                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Email</label>
+                    <input value={user?.email || ""} disabled
+                      className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-white/30 cursor-not-allowed"/>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Email</label>
-                  <input value={user?.email || ""} disabled
-                    className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl px-3.5 py-2.5 text-sm text-white/30 cursor-not-allowed"/>
+                <button onClick={handleSave} disabled={saving}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+
+              {/* Current Plan — from Profile's settings tab */}
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+                <h2 className="text-sm font-semibold text-white mb-4">Current Plan</h2>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-white font-semibold">
+                        {user?.plan === "musician" ? "Musician"
+                         : user?.plan === "musician_plus" ? "👑 Musician Plus"
+                         : user?.plan === "ultimate" ? "⭐ Ultimate"
+                         : "Free Plan"}
+                      </span>
+                    </div>
+                    <p className="text-white/30 text-sm">
+                      {isPro ? "All features unlocked · Unlimited uploads" : "Up to 3 songs · 4 platforms"}
+                    </p>
+                  </div>
+                  {!isPro && (
+                    <button
+                      onClick={() => setTab("plan")}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-500/20">
+                      ✨ Upgrade to Pro
+                    </button>
+                  )}
+                  {isPro && (
+                    <span className="px-3 py-1.5 rounded-xl text-[12px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                      ✅ Active
+                    </span>
+                  )}
                 </div>
               </div>
-              <button onClick={handleSave} disabled={saving}
-                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
             </div>
           )}
 
@@ -391,7 +428,6 @@ export default function Settings({ user, onUpdate, onLogout }) {
           {/* ── PLAN & BILLING TAB ── */}
           {tab === "plan" && (
             <div className="space-y-5">
-              {/* Current plan status */}
               <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <p className="text-[11px] text-white/30 uppercase tracking-wide mb-1">Current Plan</p>
@@ -410,7 +446,6 @@ export default function Settings({ user, onUpdate, onLogout }) {
                 }`}>{isPro ? "✅ Active" : "Free Tier"}</span>
               </div>
 
-              {/* Billing toggle */}
               {!isPro && (
                 <>
                   <div className="flex items-center justify-center gap-3">
@@ -424,8 +459,6 @@ export default function Settings({ user, onUpdate, onLogout }) {
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">Save 40%</span>
                     </span>
                   </div>
-
-                  {/* Plan cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {plans.map(p => (
                       <PlanCard
@@ -464,9 +497,10 @@ export default function Settings({ user, onUpdate, onLogout }) {
             </div>
           )}
 
-          {/* ── DANGER ZONE TAB ── */}
+          {/* ── DANGER ZONE TAB ── (merged from Profile's settings tab) */}
           {tab === "danger" && (
             <div className="space-y-4">
+              {/* Logout */}
               <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-white/70 font-semibold">Log Out</p>
@@ -477,9 +511,13 @@ export default function Settings({ user, onUpdate, onLogout }) {
                   Logout
                 </button>
               </div>
+
+              {/* Delete Account — from Profile's settings tab */}
               <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
                 <h2 className="text-sm font-semibold text-red-400 mb-1">Delete Account</h2>
-                <p className="text-white/30 text-sm mb-4">This will permanently delete your account, all songs, and data. This cannot be undone.</p>
+                <p className="text-white/30 text-sm mb-4">
+                  This will permanently delete your account, all songs, and data. This cannot be undone.
+                </p>
                 {!showDeleteConfirm ? (
                   <button onClick={() => setShowDeleteConfirm(true)}
                     className="px-5 py-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium transition-all">
