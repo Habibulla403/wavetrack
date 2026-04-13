@@ -48,7 +48,7 @@ export default function App() {
     music:        <MyMusic      user={user} onPlaySong={handlePlaySong} />,
     distribution: <Distribution />,
     analytics:    <Analytics />,
-    profile:      <Profile      user={user} onUpdate={handleUpdate} />,
+    profile:      <Profile      user={user} onUpdate={handleUpdate} onNavigate={setActivePage} />,
     settings:     <Settings     user={user} onUpdate={handleUpdate} onLogout={handleLogout} />,
   };
 
