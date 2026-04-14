@@ -204,23 +204,12 @@ export default function Profile({ user, onUpdate, onNavigate }) {
           <h1 className="text-2xl font-bold text-white tracking-tight">Artist Profile</h1>
           <p className="text-white/40 text-sm mt-1">Manage your public artist profile</p>
         </div>
-        <div className="flex items-center gap-3">
-          {saved && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-sm font-medium">
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,7 5,10 12,3"/></svg>
-              Profile saved!
-            </div>
-          )}
-          <button
-            onClick={() => onNavigate && onNavigate("settings")}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/80 border border-white/[0.06] text-sm font-medium transition-all">
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-            </svg>
-            Settings
-          </button>
-        </div>
+        {saved && (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-sm font-medium">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,7 5,10 12,3"/></svg>
+            Profile saved!
+          </div>
+        )}
       </div>
 
       {/* Hero card */}
@@ -465,7 +454,7 @@ export default function Profile({ user, onUpdate, onNavigate }) {
       {activeTab === "social" && (
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
           <h2 className="text-sm font-semibold text-white mb-1">Social Links</h2>
-          <p className="text-white/30 text-[12px] mb-5">These links appear on your public profile below the bio</p>
+          <div className="mb-5" />
           <div className="space-y-3">
             {SOCIAL_PLATFORMS.map(p => (
               <div key={p.key} className="flex items-center gap-3">
