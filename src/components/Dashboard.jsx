@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import UploadSection from "./UploadSection";
 import SongTable from "./SongTable";
 import { getSongs, getStats, getAnalytics } from "../api";
 
@@ -270,9 +269,7 @@ export default function Dashboard({ user, onPlaySong, setActivePage }) {
     });
   }, [songRefresh]);
 
-  const firstName = user?.name?.split(" ")[0] || "Artist";
   const hour      = new Date().getHours();
-  const greeting  = hour < 12 ? "Good morning ☀️" : hour < 18 ? "Good afternoon 🌤️" : "Good evening 🌙";
 
   // Chart data from real analytics
   const weeklyData  = analytics?.weekly  || Array.from({ length: 7 },  (_, i) => ({ day: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i], streams: 0 }));
@@ -294,20 +291,9 @@ export default function Dashboard({ user, onPlaySong, setActivePage }) {
   return (
     <div className="space-y-5">
       {/* Top bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            {greeting}, {firstName} 👋
-          </h1>
-          <p className="text-white/35 text-sm mt-0.5">Here's what's happening with your music today.</p>
-        </div>
-        <button onClick={() => setActivePage?.("music")}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all shadow-lg shadow-emerald-500/20 w-fit">
-          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-            <line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/>
-          </svg>
-          Upload Song
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+        <p className="text-white/35 text-sm mt-0.5">Here's what's happening with your music today.</p>
       </div>
 
       {/* 4 real stat cards */}
@@ -344,7 +330,6 @@ export default function Dashboard({ user, onPlaySong, setActivePage }) {
       </div>
 
       {/* Upload + Song table */}
-      <UploadSection onSongAdded={() => setSongRefresh(r => r + 1)}/>
       <SongTable limit={5} refresh={songRefresh} onPlaySong={onPlaySong}/>
     </div>
   );
