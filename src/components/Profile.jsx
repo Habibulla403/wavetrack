@@ -193,8 +193,8 @@ export default function Profile({ user, onUpdate, onNavigate }) {
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : "2026";
 
-  // Only 3 tabs — settings tab completely removed
-  const tabs = ["overview", "songs", "social"];
+  // Only 2 tabs — social links moved to Settings
+  const tabs = ["overview", "songs"];
 
   return (
     <div className="space-y-6">
@@ -295,23 +295,6 @@ export default function Profile({ user, onUpdate, onNavigate }) {
                   <input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })}
                     placeholder="https://yoursite.com"
                     className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-                </div>
-              </div>
-
-              {/* Social links inline in edit mode */}
-              <div>
-                <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-2">Social Links</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {SOCIAL_PLATFORMS.map(p => (
-                    <div key={p.key} className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2">
-                      <span className="text-base flex-shrink-0">{p.icon}</span>
-                      <input
-                        value={form.socialLinks[p.key] || ""}
-                        onChange={e => setForm({ ...form, socialLinks: { ...form.socialLinks, [p.key]: e.target.value } })}
-                        placeholder={p.label}
-                        className="flex-1 bg-transparent text-sm text-white placeholder-white/20 focus:outline-none min-w-0"/>
-                    </div>
-                  ))}
                 </div>
               </div>
 
@@ -450,32 +433,6 @@ export default function Profile({ user, onUpdate, onNavigate }) {
         </div>
       )}
 
-      {/* Social tab */}
-      {activeTab === "social" && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-          <h2 className="text-sm font-semibold text-white mb-1">Social Links</h2>
-          <div className="mb-5" />
-          <div className="space-y-3">
-            {SOCIAL_PLATFORMS.map(p => (
-              <div key={p.key} className="flex items-center gap-3">
-                <span className="text-lg w-7 text-center flex-shrink-0">{p.icon}</span>
-                <div className="flex-1">
-                  <label className="text-[10px] text-white/25 uppercase tracking-wide block mb-1">{p.label}</label>
-                  <input
-                    value={form.socialLinks[p.key] || ""}
-                    onChange={e => setForm({ ...form, socialLinks: { ...form.socialLinks, [p.key]: e.target.value } })}
-                    placeholder={p.placeholder}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/15 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button onClick={handleSave} disabled={saving}
-            className="mt-5 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
-            {saving ? "Saving..." : "Save Links"}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
