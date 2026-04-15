@@ -1,7 +1,263 @@
 import { useState, useEffect, useRef } from "react";
 import { getSongs, getStats, updateProfile } from "../api";
 
-// ── Avatar Upload ─────────────────────────────────────────────────
+const API = "https://wavetrack-backend-rggh.onrender.com";
+
+// ── PayoutSection component ───────────────────────────────────────
+function PayoutSection({ isPro, onUpgrade }) {
+  const [status,         setStatus]         = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [requesting,     setRequesting]     = useState(false);
+  const [savingInfo,     setSavingInfo]     = useState(false);
+  const [showInfoForm,   setShowInfoForm]   = useState(false);
+  const [msg,            setMsg]            = useState(null); // { type: "success"|"error", text }
+  const [payoutForm,     setPayoutForm]     = useState({
+    method: "paypal", paypalEmail: "", bankName: "", accountNumber: "", accountName: "",
+  });
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const r     = await fetch(`${API}/api/payout/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data  = await r.json();
+      setStatus(data);
+      if (data.payoutInfo?.method) {
+        setPayoutForm({
+          method:        data.payoutInfo.method        || "paypal",
+          paypalEmail:   data.payoutInfo.paypalEmail   || "",
+          bankName:      data.payoutInfo.bankName      || "",
+          accountNumber: data.payoutInfo.accountNumber || "",
+          accountName:   data.payoutInfo.accountName   || "",
+        });
+      }
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSaveInfo = async () => {
+    setSavingInfo(true);
+    setMsg(null);
+    try {
+      const token = localStorage.getItem("token");
+      const r     = await fetch(`${API}/api/payout/info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payoutForm),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.message);
+      setMsg({ type: "success", text: "Payout info saved!" });
+      setShowInfoForm(false);
+      load();
+    } catch (e) {
+      setMsg({ type: "error", text: e.message });
+    } finally { setSavingInfo(false); }
+  };
+
+  const handleRequest = async () => {
+    if (!confirm(`Request payout of $${status?.available?.toFixed(2)}?`)) return;
+    setRequesting(true);
+    setMsg(null);
+    try {
+      const token = localStorage.getItem("token");
+      const r     = await fetch(`${API}/api/payout/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.message);
+      setMsg({ type: "success", text: data.message });
+      load();
+    } catch (e) {
+      setMsg({ type: "error", text: e.message });
+    } finally { setRequesting(false); }
+  };
+
+  if (loading) return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 flex items-center gap-3">
+      <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#34d399" strokeWidth="3"/>
+        <path className="opacity-75" fill="#34d399" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+      <span className="text-white/30 text-sm">Loading earnings...</span>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Earnings overview */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-sm font-semibold text-white">💰 Earnings & Payout</h2>
+          {isPro && (
+            <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 font-semibold">
+              ✅ Payout Enabled
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          {[
+            { label: "Total Earned",  value: `$${(status?.totalEarnings  || 0).toFixed(2)}`, color: "text-white"       },
+            { label: "Already Paid",  value: `$${(status?.paidOut        || 0).toFixed(2)}`, color: "text-white/40"    },
+            { label: "Available",     value: `$${(status?.available      || 0).toFixed(2)}`, color: "text-emerald-400" },
+          ].map(item => (
+            <div key={item.label} className="rounded-xl bg-white/[0.03] border border-white/[0.05] p-3 text-center">
+              <div className={`text-xl font-bold ${item.color}`}>{item.value}</div>
+              <div className="text-[10px] text-white/25 mt-0.5">{item.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* FREE USER — locked */}
+        {!isPro && (
+          <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="text-2xl">🔒</div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-400">Premium Required to Withdraw</p>
+              <p className="text-[12px] text-white/35 mt-0.5">
+                Your earnings are being tracked. Upgrade to a paid plan to request payouts.
+              </p>
+            </div>
+            <button onClick={onUpgrade}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all flex-shrink-0">
+              Upgrade Now
+            </button>
+          </div>
+        )}
+
+        {/* PREMIUM USER — payout controls */}
+        {isPro && (
+          <div className="space-y-3">
+            {/* Payout info status */}
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div>
+                <p className="text-sm text-white/60 font-medium">Payout Method</p>
+                {status?.payoutInfo?.method ? (
+                  <p className="text-[12px] text-emerald-400">
+                    {status.payoutInfo.method === "paypal"
+                      ? `PayPal · ${status.payoutInfo.paypalEmail}`
+                      : `Bank · ${status.payoutInfo.bankName}`}
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-amber-400">Not set — please add payout info</p>
+                )}
+              </div>
+              <button onClick={() => setShowInfoForm(v => !v)}
+                className="text-[12px] px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                {showInfoForm ? "Cancel" : "Edit"}
+              </button>
+            </div>
+
+            {/* Payout info form */}
+            {showInfoForm && (
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-3">
+                <div className="flex gap-2">
+                  {["paypal", "bank"].map(m => (
+                    <button key={m} onClick={() => setPayoutForm(f => ({ ...f, method: m }))}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium capitalize transition-all border ${
+                        payoutForm.method === m
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                          : "border-white/[0.06] text-white/30 hover:text-white/60"
+                      }`}>{m === "paypal" ? "💳 PayPal" : "🏦 Bank Transfer"}</button>
+                  ))}
+                </div>
+                {payoutForm.method === "paypal" ? (
+                  <div>
+                    <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">PayPal Email</label>
+                    <input value={payoutForm.paypalEmail}
+                      onChange={e => setPayoutForm(f => ({ ...f, paypalEmail: e.target.value }))}
+                      placeholder="your@paypal.com"
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[
+                      { key: "accountName",   label: "Account Name",   placeholder: "Full name" },
+                      { key: "bankName",      label: "Bank Name",      placeholder: "e.g. Dutch Bangla Bank" },
+                      { key: "accountNumber", label: "Account Number", placeholder: "Account number" },
+                    ].map(f => (
+                      <div key={f.key}>
+                        <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">{f.label}</label>
+                        <input value={payoutForm[f.key]}
+                          onChange={e => setPayoutForm(pf => ({ ...pf, [f.key]: e.target.value }))}
+                          placeholder={f.placeholder}
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={handleSaveInfo} disabled={savingInfo}
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
+                  {savingInfo ? "Saving..." : "Save Payout Info"}
+                </button>
+              </div>
+            )}
+
+            {/* Request payout button */}
+            <button
+              onClick={handleRequest}
+              disabled={requesting || !status?.payoutInfo?.method || (status?.available || 0) < 1 || (status?.pendingPayout || 0) > 0}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed">
+              {requesting ? "Submitting..." :
+               (status?.pendingPayout || 0) > 0 ? `⏳ Payout Pending ($${(status?.pendingPayout||0).toFixed(2)})` :
+               (status?.available || 0) < 1 ? "No earnings to withdraw yet" :
+               !status?.payoutInfo?.method ? "Set payout info first" :
+               `Withdraw $${(status?.available || 0).toFixed(2)}`}
+            </button>
+
+            <p className="text-[11px] text-white/20 text-center">
+              Minimum $1.00 · Processed within 3–5 business days
+            </p>
+          </div>
+        )}
+
+        {/* Message */}
+        {msg && (
+          <div className={`mt-3 px-4 py-3 rounded-xl text-sm font-medium ${
+            msg.type === "success"
+              ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-400"
+              : "bg-red-500/10 border border-red-500/25 text-red-400"
+          }`}>{msg.text}</div>
+        )}
+      </div>
+
+      {/* Payout history */}
+      {isPro && (status?.payoutRequests || []).length > 0 && (
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+          <h3 className="text-sm font-semibold text-white mb-4">Payout History</h3>
+          <div className="space-y-2">
+            {status.payoutRequests.map((r, i) => (
+              <div key={i} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.02]">
+                <div>
+                  <span className="text-sm text-white/70 font-medium">${r.amount?.toFixed(2)}</span>
+                  <span className="text-[11px] text-white/25 ml-2">{r.method}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-white/25">
+                    {new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                    r.status === "paid"     ? "bg-emerald-500/15 text-emerald-400" :
+                    r.status === "rejected" ? "bg-red-500/15 text-red-400" :
+                    "bg-amber-500/15 text-amber-400"
+                  }`}>{r.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 async function uploadAvatarToCloudinary(file) {
   const reader = new FileReader();
   const base64 = await new Promise((res, rej) => {
@@ -495,6 +751,9 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
                   </button>
                 </div>
               )}
+
+              {/* ── PAYOUT SECTION ── */}
+              <PayoutSection isPro={isPro} onUpgrade={() => setTab("plan")} />
             </div>
           )}
 
