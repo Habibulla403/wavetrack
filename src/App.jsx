@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import Sidebar from "./components/Sidebar";
-import Dashboard from "./components/Dashboard";
-import MyMusic from "./components/MyMusic";
-import Distribution from "./components/Distribution";
-import Analytics from "./components/Analytics";
-import AuthPage from "./components/AuthPage";
-import Profile from "./components/Profile";
-import Settings from "./components/Settings";
-import LandingPage from "./components/LandingPage";
-import SongPlayer from "./components/SongPlayer";
+import Sidebar        from "./components/Sidebar";
+import Dashboard      from "./components/Dashboard";
+import MyMusic        from "./components/MyMusic";
+import Distribution   from "./components/Distribution";
+import Analytics      from "./components/Analytics";
+import AuthPage       from "./components/AuthPage";
+import Profile        from "./components/Profile";
+import Settings       from "./components/Settings";
+import LandingPage    from "./components/LandingPage";
+import SongPlayer     from "./components/SongPlayer";
+import AdminDashboard from "./components/AdminDashboard";
 
 export default function App() {
   const [activePage,   setActivePage]   = useState("dashboard");
@@ -41,6 +42,47 @@ export default function App() {
 
   if (!user && !showAuth) return <LandingPage onGetStarted={() => setShowAuth(true)} />;
   if (!user && showAuth)  return <AuthPage onAuth={handleAuth} />;
+
+  const isStaff = user?.role === "admin" || user?.role === "mod";
+
+  // Admin/Mod users see only admin panel
+  if (isStaff) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] text-white font-sans">
+        <div className="border-b border-white/[0.05] bg-[#0D0D14] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+                <path d="M1.5 8 Q3.5 4 5.5 8 Q7.5 12 9.5 8 Q11.5 4 13.5 8" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              </svg>
+            </div>
+            <div>
+              <div className="font-bold text-[15px] tracking-tight text-white">WaveTrack</div>
+              <div className="text-[10px] text-white/30 tracking-wide">
+                {user?.role === "admin" ? "👑 ADMIN PANEL" : "🛡️ MOD PANEL"}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden sm:block">
+              <div className="text-sm font-medium text-white/70">{user?.name}</div>
+              <div className="text-[11px] text-white/30">{user?.email}</div>
+            </div>
+            <button onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-all border border-red-500/20">
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                <path d="M9 2H3a1 1 0 00-1 1v10a1 1 0 001 1h6M12 9l3-3-3-3M7 9h8"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+        <div className="p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto">
+          <AdminDashboard user={user} />
+        </div>
+      </div>
+    );
+  }
 
   const pages = {
     dashboard:    <Dashboard    user={user} onPlaySong={handlePlaySong} setActivePage={setActivePage} />,
