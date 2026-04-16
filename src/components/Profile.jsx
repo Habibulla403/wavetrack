@@ -1,438 +1,235 @@
-import { useState, useEffect, useRef } from "react";
-import { getSongs, getStats, updateProfile } from "../api";
+import express from "express";
+import { protect, requireRole } from "../middleware/auth.js";
+import User from "../models/User.js";
+import Song from "../models/Song.js";
 
-const coverColors = {
-  0: "from-emerald-500 to-teal-600", 1: "from-amber-400 to-orange-500",
-  2: "from-violet-500 to-purple-700", 3: "from-blue-500 to-indigo-600",
-  4: "from-pink-500 to-rose-600",    5: "from-zinc-500 to-zinc-700",
-};
+const router = express.Router();
 
-async function uploadAvatarToCloudinary(file) {
-  const reader = new FileReader();
-  const base64 = await new Promise((res, rej) => {
-    reader.onload = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-  const r = await fetch("https://wavetrack-backend-rggh.onrender.com/api/upload", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify({ file: base64, type: "image" }),
-  });
-  const data = await r.json();
-  return data.url || null;
-}
+// All admin routes require auth + mod or admin role
+router.use(protect);
+router.use(requireRole("mod", "admin"));
 
-function AvatarUpload({ initials, avatarUrl, onUpload }) {
-  const inputRef = useRef();
-  const [preview,   setPreview]   = useState(avatarUrl || null);
-  const [uploading, setUploading] = useState(false);
+// ── GET /api/admin/stats ───────────────────────────────────────────
+// Overview stats for admin dashboard
+router.get("/stats", async (req, res) => {
+  try {
+    const [totalUsers, totalSongs, premiumUsers, pendingPayouts] = await Promise.all([
+      User.countDocuments({ role: "user" }),
+      Song.countDocuments(),
+      User.countDocuments({ plan: { $ne: "free" }, role: "user" }),
+      User.countDocuments({ "payoutRequests.status": "pending" }),
+    ]);
 
-  const handleFile = async (file) => {
-    if (!file || !file.type.startsWith("image/")) return;
-    setPreview(URL.createObjectURL(file));
-    setUploading(true);
-    try {
-      const url = await uploadAvatarToCloudinary(file);
-      if (url) { setPreview(url); onUpload(url); }
-    } catch {
-      alert("Avatar upload failed. Please try again.");
-    } finally {
-      setUploading(false);
+    const songs   = await Song.find();
+    const revenue = songs.reduce((a, s) => a + (s.earnings || 0), 0);
+
+    res.json({ totalUsers, totalSongs, premiumUsers, pendingPayouts, totalRevenue: revenue });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/admin/users ───────────────────────────────────────────
+// List all users with their songs count and earnings
+router.get("/users", async (req, res) => {
+  try {
+    const { search, plan, page = 1, limit = 20 } = req.query;
+    const query = { role: "user" };
+    if (plan)   query.plan = plan;
+    if (search) query.$or = [
+      { name:  { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
+
+    const users = await User.find(query)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await User.countDocuments(query);
+
+    // Attach song count + earnings per user
+    const enriched = await Promise.all(users.map(async (u) => {
+      const songs    = await Song.find({ user: u._id });
+      const earnings = songs.reduce((a, s) => a + (s.earnings || 0), 0);
+      const pending  = (u.payoutRequests || []).find(r => r.status === "pending");
+      return {
+        _id: u._id, name: u.name, email: u.email, plan: u.plan,
+        createdAt: u.createdAt, avatarUrl: u.avatarUrl,
+        songCount: songs.length, totalEarnings: earnings,
+        hasPendingPayout: !!pending,
+        pendingAmount: pending?.amount || 0,
+        payoutInfo: u.payoutInfo || null,
+      };
+    }));
+
+    res.json({ users: enriched, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/admin/users/:id ───────────────────────────────────────
+// Get single user detail
+router.get("/users/:id", async (req, res) => {
+  try {
+    const user  = await User.findById(req.params.id).select("-password");
+    if (!user)  return res.status(404).json({ message: "User not found" });
+    const songs = await Song.find({ user: user._id }).sort({ createdAt: -1 });
+    res.json({ user, songs });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── PATCH /api/admin/users/:id/plan ───────────────────────────────
+// Change a user's plan manually (admin only)
+router.patch("/users/:id/plan", requireRole("admin"), async (req, res) => {
+  try {
+    const { plan } = req.body;
+    const valid = ["free","musician","musician_plus","ultimate"];
+    if (!valid.includes(plan)) return res.status(400).json({ message: "Invalid plan" });
+    const user = await User.findByIdAndUpdate(req.params.id, { plan }, { new: true }).select("-password");
+    res.json({ message: `Plan updated to ${plan}`, user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/admin/songs ───────────────────────────────────────────
+// List all songs with filter by status
+router.get("/songs", async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20, search } = req.query;
+    const query = {};
+    if (status) query.status = status;
+    if (search) query.title = { $regex: search, $options: "i" };
+
+    const songs = await Song.find(query)
+      .populate("user", "name email plan")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await Song.countDocuments(query);
+    res.json({ songs, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── PATCH /api/admin/songs/:id/status ─────────────────────────────
+// Approve / reject a song
+router.patch("/songs/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["pending","live","draft"].includes(status))
+      return res.status(400).json({ message: "Invalid status" });
+    const song = await Song.findByIdAndUpdate(req.params.id, { status }, { new: true })
+      .populate("user", "name email");
+    res.json({ message: `Song marked as ${status}`, song });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/admin/payouts ─────────────────────────────────────────
+// All pending payout requests
+router.get("/payouts", async (req, res) => {
+  try {
+    const users = await User.find({ "payoutRequests.0": { $exists: true } }).select("-password");
+    const result = [];
+    for (const u of users) {
+      for (const req of (u.payoutRequests || [])) {
+        result.push({
+          userId:      u._id,
+          userName:    u.name,
+          userEmail:   u.email,
+          plan:        u.plan,
+          payoutInfo:  u.payoutInfo,
+          requestId:   req._id,
+          amount:      req.amount,
+          method:      req.method,
+          status:      req.status,
+          createdAt:   req.createdAt,
+          note:        req.note,
+        });
+      }
     }
-  };
+    result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-  return (
-    <div className="relative group cursor-pointer" onClick={() => inputRef.current.click()}>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => handleFile(e.target.files[0])}/>
-      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl overflow-hidden">
-        {preview ? <img src={preview} alt="avatar" className="w-full h-full object-cover"/> : initials}
-      </div>
-      {uploading && (
-        <div className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center">
-          <svg className="animate-spin" width="20" height="20" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#34d399" strokeWidth="3"/>
-            <path className="opacity-75" fill="#34d399" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-        </div>
-      )}
-      {!uploading && (
-        <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <svg width="20" height="20" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" transform="scale(0.8) translate(3,3)"/>
-            <circle cx="12" cy="13" r="4" transform="scale(0.8) translate(3,3)"/>
-          </svg>
-        </div>
-      )}
-      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-[#0A0A0F] flex items-center justify-center">
-        <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="5" y1="2" x2="5" y2="8"/><line x1="2" y1="5" x2="8" y2="5"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
+// ── PATCH /api/admin/payouts/:userId/:requestId ────────────────────
+// Mark payout as paid or rejected
+router.patch("/payouts/:userId/:requestId", async (req, res) => {
+  try {
+    const { status, note } = req.body;
+    if (!["paid","rejected","pending"].includes(status))
+      return res.status(400).json({ message: "Invalid status" });
 
-function StatCard({ label, value, icon, color = "text-white" }) {
-  return (
-    <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center flex-shrink-0 text-lg">{icon}</div>
-      <div>
-        <div className={`text-xl font-bold ${color}`}>{value}</div>
-        <div className="text-[11px] text-white/30">{label}</div>
-      </div>
-    </div>
-  );
-}
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-// Social platform config
-const SOCIAL_PLATFORMS = [
-  { key: "spotify",   label: "Spotify",   placeholder: "https://open.spotify.com/artist/...", icon: "🎵", color: "text-green-400" },
-  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/...",            icon: "📷", color: "text-pink-400"  },
-  { key: "twitter",   label: "Twitter/X", placeholder: "https://twitter.com/...",              icon: "🐦", color: "text-sky-400"   },
-  { key: "youtube",   label: "YouTube",   placeholder: "https://youtube.com/...",              icon: "▶️", color: "text-red-400"   },
-  { key: "tiktok",    label: "TikTok",    placeholder: "https://tiktok.com/@...",              icon: "🎶", color: "text-white/60"  },
-];
+    const pr = user.payoutRequests.id(req.params.requestId);
+    if (!pr) return res.status(404).json({ message: "Payout request not found" });
 
-function SocialLinksDisplay({ links }) {
-  const active = SOCIAL_PLATFORMS.filter(p => links[p.key]);
-  if (!active.length) return null;
-  return (
-    <div className="flex flex-wrap gap-2">
-      {active.map(p => (
-        <a key={p.key} href={links[p.key]} target="_blank" rel="noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] transition-all text-[12px] text-white/50 hover:text-white/80">
-          <span>{p.icon}</span>
-          <span>{p.label}</span>
-        </a>
-      ))}
-    </div>
-  );
-}
+    pr.status = status;
+    if (note) pr.note = note;
+    await user.save();
 
-// Word count helper
-function wordCount(str) {
-  return str.trim() ? str.trim().split(/\s+/).length : 0;
-}
+    res.json({ message: `Payout marked as ${status}` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-export default function Profile({ user, onUpdate, onNavigate }) {
-  const [stats,     setStats]     = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
-  const [songs,     setSongs]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [editing,   setEditing]   = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [saved,     setSaved]     = useState(false);
-  const [saving,    setSaving]    = useState(false);
-  const [bioError,  setBioError]  = useState("");
-
-  const [form, setForm] = useState({
-    name:        user?.name        || "",
-    bio:         user?.bio         || "",
-    location:    user?.location    || "",
-    website:     user?.website     || "",
-    genre:       user?.genre       || "",
-    socialLinks: user?.socialLinks || {},
-    avatarUrl:   user?.avatarUrl   || "",
-  });
-
-  const initials = user?.name
-    ? user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-    : "U";
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    setLoading(true);
-    Promise.all([
-      getStats(token).catch(() => ({})),
-      getSongs(token).catch(() => []),
-    ]).then(([s, sg]) => {
-      setStats(s || {});
-      setSongs(Array.isArray(sg) ? sg : []);
-      setLoading(false);
-    });
-  }, []);
-
-  const handleBioChange = (val) => {
-    const wc = wordCount(val);
-    if (wc > 200) {
-      setBioError(`সর্বোচ্চ ২০০ শব্দ (এখন ${wc})`);
-    } else {
-      setBioError("");
+// ── GET /api/admin/messages ────────────────────────────────────────
+// All support messages from users
+router.get("/messages", async (req, res) => {
+  try {
+    const users = await User.find({ "supportMessages.0": { $exists: true } }).select("-password");
+    const msgs  = [];
+    for (const u of users) {
+      for (const m of (u.supportMessages || [])) {
+        msgs.push({
+          userId:    u._id, userName: u.name, userEmail: u.email,
+          messageId: m._id, subject: m.subject, body: m.body,
+          status:    m.status, reply: m.reply,
+          createdAt: m.createdAt,
+        });
+      }
     }
-    setForm(f => ({ ...f, bio: val }));
-  };
+    msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json(msgs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-  const handleSave = async () => {
-    if (wordCount(form.bio) > 200) {
-      setBioError("বায়ো সর্বোচ্চ ২০০ শব্দ হতে পারবে");
-      return;
-    }
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token");
-      const updated = await updateProfile(form, token);
-      const merged = { ...user, ...updated };
-      localStorage.setItem("user", JSON.stringify(merged));
-      if (onUpdate) onUpdate(merged);
-      setEditing(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch {
-      alert("Failed to save profile. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
+// ── POST /api/admin/messages/:userId/:messageId/reply ─────────────
+// Reply to a user support message
+router.post("/messages/:userId/:messageId/reply", async (req, res) => {
+  try {
+    const { reply } = req.body;
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-  const isPro    = user?.plan === "pro";
-  const joinDate = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : "2026";
+    const msg = user.supportMessages.id(req.params.messageId);
+    if (!msg) return res.status(404).json({ message: "Message not found" });
 
-  // Only 2 tabs — social links moved to Settings
-  const tabs = ["overview", "songs"];
+    msg.reply  = reply;
+    msg.status = "replied";
+    await user.save();
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Artist Profile</h1>
-          <p className="text-white/40 text-sm mt-1">Manage your public artist profile</p>
-        </div>
-        {saved && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-sm font-medium">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,7 5,10 12,3"/></svg>
-            Profile saved!
-          </div>
-        )}
-      </div>
+    res.json({ message: "Reply sent" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-      {/* Hero card */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div className="h-28 bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20 relative">
-          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 20%, #06b6d4 0%, transparent 50%)" }}/>
-        </div>
-        <div className="px-6 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 mb-5">
-            <AvatarUpload
-              initials={initials}
-              avatarUrl={form.avatarUrl || user?.avatarUrl}
-              onUpload={(url) => setForm(f => ({ ...f, avatarUrl: url }))}
-            />
-            <div className="flex-1 sm:pb-1">
-              {editing ? (
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="text-2xl font-bold bg-transparent border-b border-emerald-500/50 text-white focus:outline-none w-full mb-1"
-                  placeholder="Your name"/>
-              ) : (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-2xl font-bold text-white">{user?.name || "Artist"}</h2>
-                  {isPro && <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold border border-yellow-400/30">👑 PRO</span>}
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30 border border-white/[0.08]">{isPro ? "Pro" : "Free"} Plan</span>
-                </div>
-              )}
-              <p className="text-white/40 text-sm">{user?.email}</p>
-            </div>
-            <button
-              onClick={() => editing ? handleSave() : setEditing(true)}
-              disabled={saving}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all flex-shrink-0 ${
-                editing ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "bg-white/5 hover:bg-white/10 text-white/60 border border-white/[0.06]"
-              } disabled:opacity-60`}>
-              {saving ? (
-                <><svg className="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
-              ) : editing ? (
-                <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,6 5,9 11,3"/></svg> Save</>
-              ) : (
-                <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 1l3 3L4 12H1V9L9 1z"/></svg> Edit Profile</>
-              )}
-            </button>
-          </div>
-
-          {/* Edit mode */}
-          {editing ? (
-            <div className="space-y-3">
-              {/* Bio with word counter */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide">Bio</label>
-                  <span className={`text-[10px] font-mono ${wordCount(form.bio) > 200 ? "text-red-400" : "text-white/25"}`}>
-                    {wordCount(form.bio)}/200 শব্দ
-                  </span>
-                </div>
-                <textarea value={form.bio} onChange={e => handleBioChange(e.target.value)}
-                  rows={4} placeholder="Tell people about yourself... (সর্বোচ্চ ২০০ শব্দ)"
-                  className={`w-full bg-white/[0.04] border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all resize-none ${
-                    bioError ? "border-red-500/50 focus:border-red-500" : "border-white/[0.08] focus:border-emerald-500/50"
-                  }`}/>
-                {bioError && <p className="text-[11px] text-red-400 mt-1">{bioError}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Location</label>
-                  <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })}
-                    placeholder="যেমন: Dhaka, Bangladesh"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-                </div>
-                <div>
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Genre</label>
-                  <select value={form.genre} onChange={e => setForm({ ...form, genre: e.target.value })}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white/70 focus:outline-none focus:border-emerald-500/50 transition-all appearance-none">
-                    <option value="" className="bg-[#1a1a2e]">Select genre</option>
-                    {["Afrobeats","Amapiano","R&B","Hip-Hop","Pop","Lo-fi","Soul","Jazz","Electronic","Rock","Reggae","Classical","Synthwave"].map(g => (
-                      <option key={g} value={g} className="bg-[#1a1a2e]">{g}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Website</label>
-                  <input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })}
-                    placeholder="https://yoursite.com"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={handleSave} disabled={saving || !!bioError}
-                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button onClick={() => { setEditing(false); setBioError(""); }}
-                  className="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium text-white/50 transition-all">Cancel</button>
-              </div>
-            </div>
-          ) : (
-            /* View mode */
-            <div className="space-y-3">
-              {user?.bio && <p className="text-white/60 text-sm leading-relaxed">{user.bio}</p>}
-
-              {/* Metadata row */}
-              <div className="flex flex-wrap gap-3 text-[12px] text-white/35">
-                {user?.location && <span className="flex items-center gap-1">📍 {user.location}</span>}
-                {user?.genre    && <span className="flex items-center gap-1">🎵 {user.genre}</span>}
-                {user?.website  && <a href={user.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300">🔗 Website</a>}
-                <span className="flex items-center gap-1">📅 Joined {joinDate}</span>
-              </div>
-
-              {/* Social links displayed below bio */}
-              <SocialLinksDisplay links={user?.socialLinks || {}} />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Songs"   value={loading ? "—" : stats.total || 0}                           icon="🎵"/>
-        <StatCard label="Live Songs"    value={loading ? "—" : stats.liveSongs || 0}                       icon="🟢" color="text-emerald-400"/>
-        <StatCard label="Total Streams" value={loading ? "—" : (stats.totalStreams || 0).toLocaleString()}  icon="▶️" color="text-blue-400"/>
-        <StatCard label="Est. Earnings" value={loading ? "—" : `$${(stats.totalEarnings || 0).toFixed(2)}`} icon="💰" color="text-yellow-400"/>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl w-fit border border-white/[0.05]">
-        {tabs.map(t => (
-          <button key={t} onClick={() => setActiveTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${
-              activeTab === t ? "bg-white/10 text-white" : "text-white/35 hover:text-white/60"
-            }`}>{t}</button>
-        ))}
-      </div>
-
-      {/* Overview */}
-      {activeTab === "overview" && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/[0.06]">
-            <h2 className="text-sm font-semibold text-white">Recent Releases</h2>
-          </div>
-          {loading ? (
-            <div className="py-10 text-center">
-              <svg className="animate-spin mx-auto mb-2" width="20" height="20" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#34d399" strokeWidth="3"/>
-                <path className="opacity-75" fill="#34d399" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-              <p className="text-white/20 text-sm">Loading...</p>
-            </div>
-          ) : songs.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="text-4xl mb-3">🎵</div>
-              <p className="text-white/30 text-sm">No songs uploaded yet.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-white/[0.03]">
-              {songs.slice(0, 5).map((song, idx) => (
-                <div key={song._id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
-                  <span className="text-[12px] text-white/20 w-4 font-mono">{idx + 1}</span>
-                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${coverColors[idx % 6]} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
-                    {song.coverUrl
-                      ? <img src={song.coverUrl} alt="cover" className="w-full h-full object-cover"/>
-                      : <svg width="12" height="12" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" opacity="0.8"><path d="M2 10V5L10 3V8"/><circle cx="2" cy="10" r="1.2"/><circle cx="10" cy="8" r="1.2"/></svg>
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white truncate">{song.title}</div>
-                    <div className="text-[12px] text-white/30">{song.genre || "—"}</div>
-                  </div>
-                  <div className="text-right hidden sm:block">
-                    <div className="text-sm text-white/50">{song.streams > 0 ? song.streams.toLocaleString() : "—"}</div>
-                    <div className="text-[11px] text-white/25">streams</div>
-                  </div>
-                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${
-                    song.status === "live" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" :
-                    song.status === "pending" ? "bg-amber-500/15 text-amber-400 border border-amber-500/25" :
-                    "bg-white/5 text-white/30 border border-white/10"
-                  }`}>{song.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Songs tab */}
-      {activeTab === "songs" && (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">All Songs</h2>
-            <span className="text-[12px] text-white/30">{songs.length} tracks</span>
-          </div>
-          {songs.length === 0 ? (
-            <div className="py-12 text-center"><p className="text-white/30 text-sm">No songs yet.</p></div>
-          ) : (
-            <div className="divide-y divide-white/[0.03]">
-              {songs.map((song, idx) => (
-                <div key={song._id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02]">
-                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${coverColors[idx % 6]} flex-shrink-0 overflow-hidden`}>
-                    {song.coverUrl && <img src={song.coverUrl} alt="cover" className="w-full h-full object-cover"/>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white truncate">{song.title}</div>
-                    <div className="text-[12px] text-white/30">
-                      {song.genre || "—"} · {new Date(song.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </div>
-                  </div>
-                  <div className="text-right hidden sm:block">
-                    <div className="text-sm text-white/50 font-medium">{song.streams > 0 ? song.streams.toLocaleString() : "0"}</div>
-                    <div className="text-[11px] text-white/25">${song.earnings > 0 ? song.earnings.toFixed(2) : "0.00"}</div>
-                  </div>
-                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${
-                    song.status === "live" ? "bg-emerald-500/15 text-emerald-400" :
-                    song.status === "pending" ? "bg-amber-500/15 text-amber-400" :
-                    "bg-white/5 text-white/30"
-                  }`}>{song.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-    </div>
-  );
-}
+export default router;
