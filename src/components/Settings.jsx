@@ -59,8 +59,14 @@ function PayoutSection({ isPro, onUpgrade }) {
     } finally { setSavingInfo(false); }
   };
 
+  const [sendingSupport, setSendingSupport] = useState(false);
+  const [supportForm,    setSupportForm]    = useState({ subject: "", body: "" });
+  const [showSupport,    setShowSupport]    = useState(false);
+
   const handleRequest = async () => {
-    if (!confirm(`Request payout of $${status?.available?.toFixed(2)}?`)) return;
+    const amt = status?.available || 0;
+    const vat = Math.round((status?.vatRate || 0) * 100);
+    if (!confirm(`Request payout of $${amt.toFixed(2)} (after ${vat}% VAT deducted)?`)) return;
     setRequesting(true);
     setMsg(null);
     try {
@@ -76,6 +82,26 @@ function PayoutSection({ isPro, onUpgrade }) {
     } catch (e) {
       setMsg({ type: "error", text: e.message });
     } finally { setRequesting(false); }
+  };
+
+  const handleSendSupport = async () => {
+    if (!supportForm.subject.trim() || !supportForm.body.trim()) return;
+    setSendingSupport(true);
+    try {
+      const token = localStorage.getItem("token");
+      const r = await fetch(`${API}/api/payout/support`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(supportForm),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.message);
+      setMsg({ type: "success", text: data.message });
+      setSupportForm({ subject: "", body: "" });
+      setShowSupport(false);
+    } catch (e) {
+      setMsg({ type: "error", text: e.message });
+    } finally { setSendingSupport(false); }
   };
 
   if (loading) return (
@@ -101,11 +127,25 @@ function PayoutSection({ isPro, onUpgrade }) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        {/* VAT info banner */}
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.05] mb-4">
+          <span className="text-base">📋</span>
+          <p className="text-[11px] text-white/40">
+            VAT deducted before payout:
+            <span className="text-amber-400 font-semibold ml-1">
+              {status?.isPremium ? "20% (Premium)" : "30% (Free plan)"}
+            </span>
+            · Minimum withdrawal: <span className="text-white/60 font-semibold">$10.00</span>
+            · Monthly auto-payout for Premium
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           {[
-            { label: "Total Earned",  value: `$${(status?.totalEarnings  || 0).toFixed(2)}`, color: "text-white"       },
-            { label: "Already Paid",  value: `$${(status?.paidOut        || 0).toFixed(2)}`, color: "text-white/40"    },
-            { label: "Available",     value: `$${(status?.available      || 0).toFixed(2)}`, color: "text-emerald-400" },
+            { label: "Gross Earnings", value: `$${(status?.totalEarnings || 0).toFixed(2)}`, color: "text-white"       },
+            { label: `VAT (${Math.round((status?.vatRate||0)*100)}%)`, value: `-$${(status?.vatAmount || 0).toFixed(2)}`, color: "text-red-400"   },
+            { label: "Already Paid",   value: `$${(status?.paidOut       || 0).toFixed(2)}`, color: "text-white/40"    },
+            { label: "Available",      value: `$${(status?.available     || 0).toFixed(2)}`, color: "text-emerald-400" },
           ].map(item => (
             <div key={item.label} className="rounded-xl bg-white/[0.03] border border-white/[0.05] p-3 text-center">
               <div className={`text-xl font-bold ${item.color}`}>{item.value}</div>
@@ -114,20 +154,117 @@ function PayoutSection({ isPro, onUpgrade }) {
           ))}
         </div>
 
-        {/* FREE USER — locked */}
+        {/* FREE USER — can still withdraw but 30% VAT, need $10 */}
         {!isPro && (
-          <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="text-2xl">🔒</div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-400">Premium Required to Withdraw</p>
-              <p className="text-[12px] text-white/35 mt-0.5">
-                Your earnings are being tracked. Upgrade to a paid plan to request payouts.
-              </p>
+          <div className="space-y-3">
+            <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="text-2xl">⚠️</div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-400">Free Plan — 30% VAT on Earnings</p>
+                <p className="text-[12px] text-white/35 mt-0.5">
+                  Premium users pay only 20% VAT and get monthly auto-payout. Upgrade to save more.
+                </p>
+              </div>
+              <button onClick={onUpgrade}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all flex-shrink-0 text-sm">
+                Upgrade ✨
+              </button>
             </div>
-            <button onClick={onUpgrade}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all flex-shrink-0">
-              Upgrade Now
+            {/* Free users can still set payout info and request */}
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              <div>
+                <p className="text-sm text-white/60 font-medium">Payout Method</p>
+                {status?.payoutInfo?.method ? (
+                  <p className="text-[12px] text-emerald-400">
+                    {status.payoutInfo.method === "paypal"
+                      ? `PayPal · ${status.payoutInfo.paypalEmail}`
+                      : `Bank · ${status.payoutInfo.bankName}`}
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-amber-400">Not set — add payout info to withdraw</p>
+                )}
+              </div>
+              <button onClick={() => setShowInfoForm(v => !v)}
+                className="text-[12px] px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all">
+                {showInfoForm ? "Cancel" : "Edit"}
+              </button>
+            </div>
+            {showInfoForm && (
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-3">
+                <div className="flex gap-2">
+                  {["paypal", "bank"].map(m => (
+                    <button key={m} onClick={() => setPayoutForm(f => ({ ...f, method: m }))}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all border ${
+                        payoutForm.method === m
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                          : "border-white/[0.06] text-white/30 hover:text-white/60"
+                      }`}>{m === "paypal" ? "💳 PayPal" : "🏦 Bank Transfer"}</button>
+                  ))}
+                </div>
+                {payoutForm.method === "paypal" ? (
+                  <div>
+                    <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">PayPal Email</label>
+                    <input value={payoutForm.paypalEmail}
+                      onChange={e => setPayoutForm(f => ({ ...f, paypalEmail: e.target.value }))}
+                      placeholder="your@paypal.com"
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[
+                      { key: "accountName",   label: "Account Name",   placeholder: "Full name" },
+                      { key: "bankName",      label: "Bank Name",      placeholder: "e.g. Dutch Bangla Bank" },
+                      { key: "accountNumber", label: "Account Number", placeholder: "Account number" },
+                    ].map(field => (
+                      <div key={field.key}>
+                        <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">{field.label}</label>
+                        <input value={payoutForm[field.key]}
+                          onChange={e => setPayoutForm(pf => ({ ...pf, [field.key]: e.target.value }))}
+                          placeholder={field.placeholder}
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={handleSaveInfo} disabled={savingInfo}
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
+                  {savingInfo ? "Saving..." : "Save Payout Info"}
+                </button>
+              </div>
+            )}
+            <button
+              onClick={handleRequest}
+              disabled={requesting || !status?.payoutInfo?.method || (status?.available || 0) < 10 || (status?.pendingPayout || 0) > 0}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              {requesting ? "Submitting..." :
+               (status?.pendingPayout || 0) > 0 ? `⏳ Payout Pending ($${(status?.pendingPayout||0).toFixed(2)})` :
+               (status?.available || 0) < 10 ? `Need $${(10 - (status?.available||0)).toFixed(2)} more to withdraw` :
+               !status?.payoutInfo?.method ? "Set payout info first" :
+               `Withdraw $${(status?.available || 0).toFixed(2)} (after 30% VAT)`}
             </button>
+            <div className="pt-2 border-t border-white/[0.05]">
+              <button onClick={() => setShowSupport(v => !v)}
+                className="flex items-center gap-2 text-[12px] text-white/35 hover:text-white/60 transition-all">
+                <span>💬</span> Payout issue? Message our support team
+              </button>
+              {showSupport && (
+                <div className="mt-3 space-y-2">
+                  <input value={supportForm.subject}
+                    onChange={e => setSupportForm(f => ({ ...f, subject: e.target.value }))}
+                    placeholder="Subject (e.g. Payout not received)"
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                  <textarea value={supportForm.body}
+                    onChange={e => setSupportForm(f => ({ ...f, body: e.target.value }))}
+                    placeholder="Describe your issue..."
+                    rows={3}
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all resize-none"/>
+                  <button onClick={handleSendSupport} disabled={sendingSupport}
+                    className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
+                    {sendingSupport ? "Sending..." : "Send to Admin/Mod"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -202,18 +339,44 @@ function PayoutSection({ isPro, onUpgrade }) {
             {/* Request payout button */}
             <button
               onClick={handleRequest}
-              disabled={requesting || !status?.payoutInfo?.method || (status?.available || 0) < 1 || (status?.pendingPayout || 0) > 0}
+              disabled={requesting || !status?.payoutInfo?.method || (status?.available || 0) < 10 || (status?.pendingPayout || 0) > 0}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed">
               {requesting ? "Submitting..." :
                (status?.pendingPayout || 0) > 0 ? `⏳ Payout Pending ($${(status?.pendingPayout||0).toFixed(2)})` :
-               (status?.available || 0) < 1 ? "No earnings to withdraw yet" :
+               (status?.available || 0) < 10 ? `Need $${(10 - (status?.available||0)).toFixed(2)} more to withdraw` :
                !status?.payoutInfo?.method ? "Set payout info first" :
                `Withdraw $${(status?.available || 0).toFixed(2)}`}
             </button>
 
             <p className="text-[11px] text-white/20 text-center">
-              Minimum $1.00 · Processed within 3–5 business days
+              Minimum $10.00 · Premium accounts: monthly auto-payout · Manual request available anytime
             </p>
+
+            {/* Support / Helpline button */}
+            <div className="pt-2 border-t border-white/[0.05]">
+              <button onClick={() => setShowSupport(v => !v)}
+                className="flex items-center gap-2 text-[12px] text-white/35 hover:text-white/60 transition-all">
+                <span>💬</span>
+                Payout issue? Message our support team
+              </button>
+              {showSupport && (
+                <div className="mt-3 space-y-2">
+                  <input value={supportForm.subject}
+                    onChange={e => setSupportForm(f => ({ ...f, subject: e.target.value }))}
+                    placeholder="Subject (e.g. Payout not received)"
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                  <textarea value={supportForm.body}
+                    onChange={e => setSupportForm(f => ({ ...f, body: e.target.value }))}
+                    placeholder="Describe your issue..."
+                    rows={3}
+                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all resize-none"/>
+                  <button onClick={handleSendSupport} disabled={sendingSupport}
+                    className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
+                    {sendingSupport ? "Sending..." : "Send to Admin/Mod"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
