@@ -87,7 +87,7 @@ export default function App() {
   const pages = {
     dashboard:    <Dashboard    user={user} onPlaySong={handlePlaySong} setActivePage={setActivePage} />,
     music:        <MyMusic      user={user} onPlaySong={handlePlaySong} />,
-    distribution: <Distribution />,
+    distribution: <Distribution user={user} />,
     analytics:    <Analytics />,
     profile:      <Profile      user={user} onUpdate={handleUpdate} onNavigate={setActivePage} />,
     settings:     <Settings     user={user} onUpdate={handleUpdate} onLogout={handleLogout} />,
