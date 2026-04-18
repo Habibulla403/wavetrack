@@ -74,7 +74,7 @@ export default function Profile({ user }) {
   const tabs = ["overview", "songs"];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 lg:pb-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">Artist Profile</h1>
