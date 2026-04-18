@@ -91,9 +91,9 @@ export default function Profile({ user }) {
               </div>
           }
         </div>
-        <div className="px-6 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 mb-5">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl overflow-hidden flex-shrink-0 ring-4 ring-[#0D0D14]">
+        <div className="px-6 pb-6 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white shadow-2xl overflow-hidden flex-shrink-0 border-4 border-[#0D0D14]">
               {user?.avatarUrl
                 ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover"/>
                 : initials
