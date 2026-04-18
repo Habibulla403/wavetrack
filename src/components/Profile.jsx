@@ -7,76 +7,6 @@ const coverColors = {
   4: "from-pink-500 to-rose-600",    5: "from-zinc-500 to-zinc-700",
 };
 
-async function uploadAvatarToCloudinary(file) {
-  const reader = new FileReader();
-  const base64 = await new Promise((res, rej) => {
-    reader.onload = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-  const r = await fetch("https://wavetrack-backend-rggh.onrender.com/api/upload", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify({ file: base64, type: "image" }),
-  });
-  const data = await r.json();
-  return data.url || null;
-}
-
-function AvatarUpload({ initials, avatarUrl, onUpload }) {
-  const inputRef = useRef();
-  const [preview,   setPreview]   = useState(avatarUrl || null);
-  const [uploading, setUploading] = useState(false);
-
-  const handleFile = async (file) => {
-    if (!file || !file.type.startsWith("image/")) return;
-    setPreview(URL.createObjectURL(file));
-    setUploading(true);
-    try {
-      const url = await uploadAvatarToCloudinary(file);
-      if (url) { setPreview(url); onUpload(url); }
-    } catch {
-      alert("Avatar upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div className="relative group cursor-pointer" onClick={() => inputRef.current.click()}>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => handleFile(e.target.files[0])}/>
-      <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl overflow-hidden">
-        {preview ? <img src={preview} alt="avatar" className="w-full h-full object-cover"/> : initials}
-      </div>
-      {uploading && (
-        <div className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center">
-          <svg className="animate-spin" width="20" height="20" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#34d399" strokeWidth="3"/>
-            <path className="opacity-75" fill="#34d399" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-        </div>
-      )}
-      {!uploading && (
-        <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <svg width="20" height="20" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" transform="scale(0.8) translate(3,3)"/>
-            <circle cx="12" cy="13" r="4" transform="scale(0.8) translate(3,3)"/>
-          </svg>
-        </div>
-      )}
-      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-[#0A0A0F] flex items-center justify-center">
-        <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="5" y1="2" x2="5" y2="8"/><line x1="2" y1="5" x2="8" y2="5"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 function StatCard({ label, value, icon, color = "text-white" }) {
   return (
     <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 flex items-center gap-3">
@@ -89,13 +19,12 @@ function StatCard({ label, value, icon, color = "text-white" }) {
   );
 }
 
-// Social platform config
 const SOCIAL_PLATFORMS = [
-  { key: "spotify",   label: "Spotify",   placeholder: "https://open.spotify.com/artist/...", icon: "🎵", color: "text-green-400" },
-  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/...",            icon: "📷", color: "text-pink-400"  },
-  { key: "twitter",   label: "Twitter/X", placeholder: "https://twitter.com/...",              icon: "🐦", color: "text-sky-400"   },
-  { key: "youtube",   label: "YouTube",   placeholder: "https://youtube.com/...",              icon: "▶️", color: "text-red-400"   },
-  { key: "tiktok",    label: "TikTok",    placeholder: "https://tiktok.com/@...",              icon: "🎶", color: "text-white/60"  },
+  { key: "spotify",   label: "Spotify",   icon: "🎵" },
+  { key: "instagram", label: "Instagram", icon: "📷" },
+  { key: "twitter",   label: "Twitter/X", icon: "🐦" },
+  { key: "youtube",   label: "YouTube",   icon: "▶️" },
+  { key: "tiktok",    label: "TikTok",    icon: "🎶" },
 ];
 
 function SocialLinksDisplay({ links }) {
@@ -114,21 +43,20 @@ function SocialLinksDisplay({ links }) {
   );
 }
 
-// Word count helper
-function wordCount(str) {
-  return str.trim() ? str.trim().split(/\s+/).length : 0;
-}
-
-export default function Profile({ user, onUpdate, onNavigate }) {
+export default function Profile({ user }) {
   const [stats,     setStats]     = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
   const [songs,     setSongs]     = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
-
   const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
+
+  const isPro    = user?.plan && user.plan !== "free";
+  const joinDate = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : "2026";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -143,60 +71,14 @@ export default function Profile({ user, onUpdate, onNavigate }) {
     });
   }, []);
 
-  const handleBioChange = (val) => {
-    const wc = wordCount(val);
-    if (wc > 30) {
-      setBioError(`Max 30 words (now ${wc})`);
-    } else {
-      setBioError("");
-    }
-    setForm(f => ({ ...f, bio: val }));
-  };
-
-  const handleSave = async () => {
-    if (wordCount(form.bio) > 30) {
-      setBioError("Bio must be 30 words or less");
-      return;
-    }
-    setSaving(true);
-    try {
-      const token = localStorage.getItem("token");
-      const updated = await updateProfile(form, token);
-      const merged = { ...user, ...updated };
-      localStorage.setItem("user", JSON.stringify(merged));
-      if (onUpdate) onUpdate(merged);
-      setEditing(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch {
-      alert("Failed to save profile. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const isPro    = user?.plan === "pro";
-  const joinDate = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : "2026";
-
-  // Only 2 tabs — social links moved to Settings
   const tabs = ["overview", "songs"];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Artist Profile</h1>
-          <p className="text-white/40 text-sm mt-1">Manage your public artist profile</p>
-        </div>
-        {saved && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-sm font-medium">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,7 5,10 12,3"/></svg>
-            Profile saved!
-          </div>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Artist Profile</h1>
+        <p className="text-white/40 text-sm mt-1">Your public artist profile</p>
       </div>
 
       {/* Hero card */}
@@ -204,7 +86,7 @@ export default function Profile({ user, onUpdate, onNavigate }) {
         <div className="h-28 relative overflow-hidden">
           {user?.coverUrl
             ? <img src={user.coverUrl} alt="cover" className="w-full h-full object-cover"/>
-            : <div className="w-full h-full bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20">
+            : <div className="w-full h-full bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20 relative">
                 <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 20%, #06b6d4 0%, transparent 50%)" }}/>
               </div>
           }
@@ -242,9 +124,9 @@ export default function Profile({ user, onUpdate, onNavigate }) {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Songs"   value={loading ? "—" : stats.total || 0}                           icon="🎵"/>
-        <StatCard label="Live Songs"    value={loading ? "—" : stats.liveSongs || 0}                       icon="🟢" color="text-emerald-400"/>
-        <StatCard label="Total Streams" value={loading ? "—" : (stats.totalStreams || 0).toLocaleString()}  icon="▶️" color="text-blue-400"/>
+        <StatCard label="Total Songs"   value={loading ? "—" : stats.total || 0}                            icon="🎵"/>
+        <StatCard label="Live Songs"    value={loading ? "—" : stats.liveSongs || 0}                        icon="🟢" color="text-emerald-400"/>
+        <StatCard label="Total Streams" value={loading ? "—" : (stats.totalStreams || 0).toLocaleString()}   icon="▶️" color="text-blue-400"/>
         <StatCard label="Est. Earnings" value={loading ? "—" : `$${(stats.totalEarnings || 0).toFixed(2)}`} icon="💰" color="text-yellow-400"/>
       </div>
 
@@ -297,9 +179,9 @@ export default function Profile({ user, onUpdate, onNavigate }) {
                     <div className="text-[11px] text-white/25">streams</div>
                   </div>
                   <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${
-                    song.status === "live" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" :
-                    song.status === "pending" ? "bg-amber-500/15 text-amber-400 border border-amber-500/25" :
-                    "bg-white/5 text-white/30 border border-white/10"
+                    song.status === "live"    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" :
+                    song.status === "pending" ? "bg-amber-500/15  text-amber-400  border border-amber-500/25" :
+                                                "bg-white/5        text-white/30   border border-white/10"
                   }`}>{song.status}</span>
                 </div>
               ))}
@@ -335,9 +217,9 @@ export default function Profile({ user, onUpdate, onNavigate }) {
                     <div className="text-[11px] text-white/25">${song.earnings > 0 ? song.earnings.toFixed(2) : "0.00"}</div>
                   </div>
                   <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${
-                    song.status === "live" ? "bg-emerald-500/15 text-emerald-400" :
-                    song.status === "pending" ? "bg-amber-500/15 text-amber-400" :
-                    "bg-white/5 text-white/30"
+                    song.status === "live"    ? "bg-emerald-500/15 text-emerald-400" :
+                    song.status === "pending" ? "bg-amber-500/15  text-amber-400" :
+                                                "bg-white/5        text-white/30"
                   }`}>{song.status}</span>
                 </div>
               ))}
@@ -345,7 +227,6 @@ export default function Profile({ user, onUpdate, onNavigate }) {
           )}
         </div>
       )}
-
     </div>
   );
 }
