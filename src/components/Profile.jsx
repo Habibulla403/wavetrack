@@ -83,23 +83,30 @@ export default function Profile({ user }) {
 
       {/* Hero card */}
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div className="h-28 relative overflow-hidden">
+        {/* Background + Avatar together */}
+        <div className="relative h-40">
+          {/* Background */}
           {user?.coverUrl
             ? <img src={user.coverUrl} alt="cover" className="w-full h-full object-cover"/>
-            : <div className="w-full h-full bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20 relative">
+            : <div className="w-full h-full bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20">
                 <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 20%, #06b6d4 0%, transparent 50%)" }}/>
               </div>
           }
-        </div>
-        <div className="px-6 pb-6 pt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white shadow-2xl overflow-hidden flex-shrink-0 border-4 border-[#0D0D14]">
+          {/* Avatar — bottom left, half outside */}
+          <div className="absolute bottom-0 left-6 translate-y-1/2">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white overflow-hidden border-4 border-[#111118] shadow-2xl">
               {user?.avatarUrl
                 ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover"/>
                 : initials
               }
             </div>
-            <div className="flex-1 sm:pb-1">
+          </div>
+        </div>
+
+        {/* Content below background */}
+        <div className="px-6 pb-6 pt-16">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-5">
+            <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-2xl font-bold text-white">{user?.name || "Artist"}</h2>
                 {isPro && <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold border border-yellow-400/30">👑 PRO</span>}
