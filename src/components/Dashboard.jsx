@@ -197,7 +197,7 @@ function PlatformBar({ platforms }) {
 }
 
 // ── Recent Activity — real songs ──────────────────────────────────
-function RecentActivity({ songs }) {
+function RecentActivity({ songs, user }) {
   const recent = [...songs]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4);
@@ -212,7 +212,7 @@ function RecentActivity({ songs }) {
   const getIcon  = (s) => s.status === "live" ? "✅" : s.status === "pending" ? "⏳" : "📝";
   const getColor = (s) => s.status === "live" ? "text-emerald-400" : s.status === "pending" ? "text-amber-400" : "text-white/40";
   const getText  = (s) => {
-    if (s.status === "live") return `${s.title} is now live on all platforms`;
+    if (s.status === "live") return `${s.title} is now live on ${user?.plan && user.plan !== "free" ? "150+" : "30+"} platforms`;
     if (s.status === "pending") return `${s.title} is under review`;
     return `${s.title} saved as draft`;
   };
@@ -307,8 +307,9 @@ export default function Dashboard({ user, onPlaySong, setActivePage }) {
           sub="Across all platforms"
           sparkData={streamSparkline} sparkColor="#60a5fa"/>
         <StatCard
-          label="Platforms" value="4"
-          sub="Spotify · Apple · YT · Deezer"
+          label="Platforms"
+          value={user?.plan && user.plan !== "free" ? "150+" : "30+"}
+          sub={user?.plan && user.plan !== "free" ? "All major platforms" : "Major platforms"}
           sparkData={[3,3,3,4,4,4,4]} sparkColor="#a78bfa"/>
         <StatCard
           label="Est. Earnings" value={loading ? "—" : `$${(stats.totalEarnings || 0).toFixed(2)}`}
@@ -326,7 +327,7 @@ export default function Dashboard({ user, onPlaySong, setActivePage }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <EarningsBreakdown total={stats.totalEarnings || 0} platforms={platforms}/>
         <PlatformBar platforms={platforms}/>
-        <RecentActivity songs={songs}/>
+        <RecentActivity songs={songs} user={user}/>
       </div>
 
       {/* Upload + Song table */}
