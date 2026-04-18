@@ -607,16 +607,16 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
 
   const plans = [
     {
-      plan: "musician", label: "Musician", price: "$3.99", priceAnnual: "$2.08",
+      plan: "musician", label: "Musician", price: "$5.00", priceAnnual: "$5.00",
       features: ["Unlimited song uploads", "All major platforms", "Keep 100% royalties", "Basic analytics", "Mobile app access"],
     },
     {
-      plan: "musician_plus", label: "Musician Plus", price: "$5.99", priceAnnual: "$3.75",
+      plan: "musician_plus", label: "Musician Plus", price: "$10.00", priceAnnual: "$10.00",
       highlighted: true,
       features: ["Everything in Musician", "Advanced analytics", "Daily streaming stats", "Custom label name", "Synced lyrics", "Priority support"],
     },
     {
-      plan: "ultimate", label: "Ultimate", price: "$12.99", priceAnnual: "$7.50",
+      plan: "ultimate", label: "Ultimate", price: "$15.00", priceAnnual: "$15.00",
       features: ["Everything in Musician Plus", "5+ artists", "1TB file sharing", "Playlist contacts", "Priority distribution", "Dedicated support"],
     },
   ];
@@ -876,7 +876,6 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
                     </button>
                     <span className={`text-sm font-medium flex items-center gap-1.5 ${billing === "annual" ? "text-white" : "text-white/30"}`}>
                       Annual
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">Save 40%</span>
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
