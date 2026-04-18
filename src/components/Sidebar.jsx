@@ -118,20 +118,6 @@ export default function Sidebar({ activePage, setActivePage, sidebarOpen, user, 
             Logout
           </button>
 
-          {!isPro && (
-            <button onClick={() => setShowUpgrade(true)}
-              className="w-full p-3 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/5 border border-emerald-500/25 hover:from-emerald-500/25 hover:to-teal-500/10 transition-all text-left group">
-              <p className="text-[11px] text-emerald-400 font-semibold group-hover:text-emerald-300 transition-colors">✨ Upgrade to Pro</p>
-              <p className="text-[10px] text-white/30 mt-0.5">Unlimited uploads + analytics</p>
-            </button>
-          )}
-
-          {isPro && (
-            <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20">
-              <p className="text-[11px] text-yellow-400 font-semibold">👑 Pro Member</p>
-              <p className="text-[10px] text-white/30 mt-0.5">All features unlocked</p>
-            </div>
-          )}
         </div>
       </aside>
 
