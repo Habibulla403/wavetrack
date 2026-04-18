@@ -289,7 +289,7 @@ export default function Dashboard({ user, onPlaySong, setActivePage }) {
     : [0];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-24 lg:pb-6">
       {/* Top bar */}
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
