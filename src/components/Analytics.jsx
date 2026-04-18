@@ -60,7 +60,7 @@ export default function Analytics() {
   const topSongs  = data?.topSongs || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 lg:pb-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
