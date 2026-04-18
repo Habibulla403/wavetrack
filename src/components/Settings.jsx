@@ -549,11 +549,6 @@ const COUNTRIES = [
   "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela",
   "Vietnam","Yemen","Zambia","Zimbabwe",
 ];
-        </svg>
-      </div>
-    </div>
-  );
-}
 
 // ── Toggle Switch ─────────────────────────────────────────────────
 function Toggle({ checked, onChange }) {
