@@ -17,9 +17,9 @@ export const coverColors = {
 };
 
 export const statusConfig = {
-  live:    { label: "Live",    cls: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" },
-  pending: { label: "Pending", cls: "bg-amber-500/15 text-amber-400 border border-amber-500/25"     },
-  draft:   { label: "Draft",   cls: "bg-white/5 text-white/40 border border-white/10"               },
+  live:    { label: "Live",         cls: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" },
+  pending: { label: "Under Review", cls: "bg-amber-500/15 text-amber-400 border border-amber-500/25"      },
+  draft:   { label: "Draft",        cls: "bg-white/5 text-white/40 border border-white/10"                },
 };
 
 export function fmt(n) {
