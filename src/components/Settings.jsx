@@ -603,6 +603,7 @@ const TABS = [
   { id: "account",       label: "Account",         icon: "⚙️" },
   { id: "notifications", label: "Notifications",   icon: "🔔" },
   { id: "plan",          label: "Plan & Billing",  icon: "💳" },
+  { id: "legal",         label: "Legal",           icon: "📄" },
   { id: "danger",        label: "Danger Zone",     icon: "⚠️" },
 ];
 
@@ -997,6 +998,100 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
 
               {/* ── PAYOUT SECTION ── */}
               <PayoutSection isPro={isPro} onUpgrade={() => setTab("plan")} />
+            </div>
+          )}
+
+          {/* ── LEGAL TAB ── */}
+          {tab === "legal" && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-lg">📄</div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">Distribution Agreement</h2>
+                    <p className="text-[11px] text-white/30">WaveTrack · As of 2026</p>
+                  </div>
+                </div>
+                <div className="space-y-3 mb-5">
+                  {[
+                    { icon: "✅", title: "You keep 100% ownership", desc: "WaveTrack does not take any copyright or ownership of your music. We only get a limited license to distribute." },
+                    { icon: "💰", title: "Royalty payments", desc: "100% of earnings from Digital Stores are credited to your account after VAT deduction (30% Free / 20% Premium). Minimum withdrawal: $10." },
+                    { icon: "🌍", title: "Worldwide distribution", desc: "Your music will be distributed globally to 150+ platforms including Spotify, Apple Music, YouTube Music, and more." },
+                    { icon: "📋", title: "Your responsibilities", desc: "You must own or have legal rights to 100% of the music you upload, including all samples, cover songs, and artwork." },
+                    { icon: "🔒", title: "Content policy", desc: "WaveTrack reserves the right to remove content that violates platform policies, infringes copyrights, or is otherwise inappropriate." },
+                    { icon: "💳", title: "Subscription", desc: "Premium plans are billed monthly. You can cancel anytime. After cancellation, your music stays live until the billing period ends." },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      <span className="text-lg flex-shrink-0">{item.icon}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-white/80">{item.title}</p>
+                        <p className="text-[12px] text-white/40 mt-0.5 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <details className="group">
+                  <summary className="cursor-pointer flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors select-none list-none">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="group-open:rotate-90 transition-transform flex-shrink-0">
+                      <path d="M3 6h6M6 3l3 3-3 3"/>
+                    </svg>
+                    View full Distribution Agreement
+                  </summary>
+                  <div className="mt-4 p-4 rounded-xl bg-black/30 border border-white/[0.06] max-h-96 overflow-y-auto">
+                    <div className="text-[11px] text-white/35 leading-relaxed space-y-3">
+                      <p className="text-white/50 font-semibold text-[12px]">WaveTrack Distribution Agreement</p>
+                      <p className="text-[10px] text-white/25">As of 2026</p>
+                      <p>This Distribution Agreement is a binding legal agreement between you and WaveTrack regarding your use of our service to distribute your musical recordings to selected digital services and stores.</p>
+                      <p className="font-semibold text-white/50">1. THE SERVICE</p>
+                      <p>WaveTrack enables you to upload digital audio files for distribution to 150+ digital stores and streaming services worldwide.</p>
+                      <p className="font-semibold text-white/50">2. YOUR CONTENT</p>
+                      <p>You must own or have legal rights to 100% of all recordings, compositions, artwork and other materials you upload. You cannot upload remixes or recordings containing samples unless you have all necessary written permissions.</p>
+                      <p className="font-semibold text-white/50">3. GRANT OF RIGHTS</p>
+                      <p>You grant WaveTrack a non-exclusive license to reproduce and distribute your recordings to digital stores worldwide. WaveTrack does not take any copyright or ownership — only a limited distribution license.</p>
+                      <p className="font-semibold text-white/50">4. PAYMENT TERMS</p>
+                      <p>WaveTrack credits 100% of earnings received from digital stores to your account, after applicable VAT deduction. Free Plan: 30% VAT. Premium Plan: 20% VAT. Minimum withdrawal: $10.00. Payouts processed within 3–5 business days.</p>
+                      <p className="font-semibold text-white/50">5. CONTENT REMOVAL</p>
+                      <p>WaveTrack reserves the right to remove content that violates platform policies, infringes intellectual property rights, or is otherwise inappropriate.</p>
+                      <p className="font-semibold text-white/50">6. TERM & TERMINATION</p>
+                      <p>This agreement continues as long as your account is active. You may terminate by deleting your account. Upon termination, we will notify digital stores to remove your recordings.</p>
+                      <p className="font-semibold text-white/50">7. REPRESENTATIONS</p>
+                      <p>By uploading content you represent that: (i) you are at least 18 years old; (ii) you own or control all necessary rights; (iii) your content does not infringe any third party rights; (iv) all metadata provided is accurate.</p>
+                      <p className="font-semibold text-white/50">8. CONTACT</p>
+                      <p>For legal inquiries: legal@wavetrack.com</p>
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-lg">🔒</div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">Privacy Policy</h2>
+                    <p className="text-[11px] text-white/30">How we handle your data</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-[12px] text-white/40 leading-relaxed">
+                  <p>• We collect only data necessary to provide our service (name, email, uploaded music, payment info).</p>
+                  <p>• We never sell your personal data to third parties.</p>
+                  <p>• Your music files are stored securely on Cloudinary servers.</p>
+                  <p>• Payment information is handled securely by Stripe — we never store your card details.</p>
+                  <p>• You can request deletion of your account and all associated data at any time.</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-lg">🍪</div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">Cookie Policy</h2>
+                    <p className="text-[11px] text-white/30">Essential cookies only</p>
+                  </div>
+                </div>
+                <p className="text-[12px] text-white/40 leading-relaxed">
+                  WaveTrack uses only essential cookies required for authentication and session management. We do not use tracking or advertising cookies.
+                </p>
+              </div>
             </div>
           )}
 
