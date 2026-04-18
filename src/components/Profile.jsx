@@ -158,8 +158,8 @@ export default function Profile({ user, onUpdate, onNavigate }) {
 
   const handleBioChange = (val) => {
     const wc = wordCount(val);
-    if (wc > 200) {
-      setBioError(`সর্বোচ্চ ২০০ শব্দ (এখন ${wc})`);
+    if (wc > 30) {
+      setBioError(`Max 30 words (now ${wc})`);
     } else {
       setBioError("");
     }
@@ -167,8 +167,8 @@ export default function Profile({ user, onUpdate, onNavigate }) {
   };
 
   const handleSave = async () => {
-    if (wordCount(form.bio) > 200) {
-      setBioError("বায়ো সর্বোচ্চ ২০০ শব্দ হতে পারবে");
+    if (wordCount(form.bio) > 30) {
+      setBioError("Bio must be 30 words or less");
       return;
     }
     setSaving(true);
@@ -261,12 +261,12 @@ export default function Profile({ user, onUpdate, onNavigate }) {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[10px] text-white/30 uppercase tracking-wide">Bio</label>
-                  <span className={`text-[10px] font-mono ${wordCount(form.bio) > 200 ? "text-red-400" : "text-white/25"}`}>
-                    {wordCount(form.bio)}/200 শব্দ
+                  <span className={`text-[10px] font-mono ${wordCount(form.bio) > 30 ? "text-red-400" : "text-white/25"}`}>
+                    {wordCount(form.bio)}/30 words
                   </span>
                 </div>
                 <textarea value={form.bio} onChange={e => handleBioChange(e.target.value)}
-                  rows={4} placeholder="Tell people about yourself... (সর্বোচ্চ ২০০ শব্দ)"
+                  rows={4} placeholder="Tell people about yourself... (max 30 words)"
                   className={`w-full bg-white/[0.04] border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all resize-none ${
                     bioError ? "border-red-500/50 focus:border-red-500" : "border-white/[0.08] focus:border-emerald-500/50"
                   }`}/>
@@ -277,7 +277,7 @@ export default function Profile({ user, onUpdate, onNavigate }) {
                 <div>
                   <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Location</label>
                   <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })}
-                    placeholder="যেমন: Dhaka, Bangladesh"
+                    placeholder="e.g. Dhaka, Bangladesh"
                     className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
                 </div>
                 <div>
