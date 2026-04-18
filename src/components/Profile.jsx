@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { getSongs, getStats, updateProfile } from "../api";
+import { useState, useEffect } from "react";
+import { getSongs, getStats } from "../api";
 
 const coverColors = {
   0: "from-emerald-500 to-teal-600", 1: "from-amber-400 to-orange-500",
@@ -123,21 +123,8 @@ export default function Profile({ user, onUpdate, onNavigate }) {
   const [stats,     setStats]     = useState({ total: 0, totalStreams: 0, totalEarnings: 0, liveSongs: 0 });
   const [songs,     setSongs]     = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [editing,   setEditing]   = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [saved,     setSaved]     = useState(false);
-  const [saving,    setSaving]    = useState(false);
-  const [bioError,  setBioError]  = useState("");
 
-  const [form, setForm] = useState({
-    name:        user?.name        || "",
-    bio:         user?.bio         || "",
-    location:    user?.location    || "",
-    website:     user?.website     || "",
-    genre:       user?.genre       || "",
-    socialLinks: user?.socialLinks || {},
-    avatarUrl:   user?.avatarUrl   || "",
-  });
 
   const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -214,116 +201,42 @@ export default function Profile({ user, onUpdate, onNavigate }) {
 
       {/* Hero card */}
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-        <div className="h-28 bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20 relative">
-          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 20%, #06b6d4 0%, transparent 50%)" }}/>
+        <div className="h-28 relative overflow-hidden">
+          {user?.coverUrl
+            ? <img src={user.coverUrl} alt="cover" className="w-full h-full object-cover"/>
+            : <div className="w-full h-full bg-gradient-to-r from-emerald-600/40 via-teal-500/30 to-blue-600/20">
+                <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 20%, #06b6d4 0%, transparent 50%)" }}/>
+              </div>
+          }
         </div>
         <div className="px-6 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 mb-5">
-            <AvatarUpload
-              initials={initials}
-              avatarUrl={form.avatarUrl || user?.avatarUrl}
-              onUpload={(url) => setForm(f => ({ ...f, avatarUrl: url }))}
-            />
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl overflow-hidden flex-shrink-0">
+              {user?.avatarUrl
+                ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover"/>
+                : initials
+              }
+            </div>
             <div className="flex-1 sm:pb-1">
-              {editing ? (
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="text-2xl font-bold bg-transparent border-b border-emerald-500/50 text-white focus:outline-none w-full mb-1"
-                  placeholder="Your name"/>
-              ) : (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-2xl font-bold text-white">{user?.name || "Artist"}</h2>
-                  {isPro && <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold border border-yellow-400/30">👑 PRO</span>}
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30 border border-white/[0.08]">{isPro ? "Pro" : "Free"} Plan</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-2xl font-bold text-white">{user?.name || "Artist"}</h2>
+                {isPro && <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-400 font-bold border border-yellow-400/30">👑 PRO</span>}
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30 border border-white/[0.08]">{isPro ? "Pro" : "Free"} Plan</span>
+              </div>
               <p className="text-white/40 text-sm">{user?.email}</p>
             </div>
-            <button
-              onClick={() => editing ? handleSave() : setEditing(true)}
-              disabled={saving}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all flex-shrink-0 ${
-                editing ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "bg-white/5 hover:bg-white/10 text-white/60 border border-white/[0.06]"
-              } disabled:opacity-60`}>
-              {saving ? (
-                <><svg className="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="3"/><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z"/></svg> Saving...</>
-              ) : editing ? (
-                <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="2,6 5,9 11,3"/></svg> Save</>
-              ) : (
-                <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 1l3 3L4 12H1V9L9 1z"/></svg> Edit Profile</>
-              )}
-            </button>
           </div>
 
-          {/* Edit mode */}
-          {editing ? (
-            <div className="space-y-3">
-              {/* Bio with word counter */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide">Bio</label>
-                  <span className={`text-[10px] font-mono ${wordCount(form.bio) > 30 ? "text-red-400" : "text-white/25"}`}>
-                    {wordCount(form.bio)}/30 words
-                  </span>
-                </div>
-                <textarea value={form.bio} onChange={e => handleBioChange(e.target.value)}
-                  rows={4} placeholder="Tell people about yourself... (max 30 words)"
-                  className={`w-full bg-white/[0.04] border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all resize-none ${
-                    bioError ? "border-red-500/50 focus:border-red-500" : "border-white/[0.08] focus:border-emerald-500/50"
-                  }`}/>
-                {bioError && <p className="text-[11px] text-red-400 mt-1">{bioError}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Location</label>
-                  <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })}
-                    placeholder="e.g. Dhaka, Bangladesh"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-                </div>
-                <div>
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Genre</label>
-                  <select value={form.genre} onChange={e => setForm({ ...form, genre: e.target.value })}
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white/70 focus:outline-none focus:border-emerald-500/50 transition-all appearance-none">
-                    <option value="" className="bg-[#1a1a2e]">Select genre</option>
-                    {["Afrobeats","Amapiano","R&B","Hip-Hop","Pop","Lo-fi","Soul","Jazz","Electronic","Rock","Reggae","Classical","Synthwave"].map(g => (
-                      <option key={g} value={g} className="bg-[#1a1a2e]">{g}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] text-white/30 uppercase tracking-wide block mb-1">Website</label>
-                  <input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })}
-                    placeholder="https://yoursite.com"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={handleSave} disabled={saving || !!bioError}
-                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold text-white transition-all disabled:opacity-60">
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-                <button onClick={() => { setEditing(false); setBioError(""); }}
-                  className="px-5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium text-white/50 transition-all">Cancel</button>
-              </div>
+          <div className="space-y-3">
+            {user?.bio && <p className="text-white/60 text-sm leading-relaxed">{user.bio}</p>}
+            <div className="flex flex-wrap gap-3 text-[12px] text-white/35">
+              {user?.location && <span className="flex items-center gap-1">📍 {user.location}</span>}
+              {user?.genre    && <span className="flex items-center gap-1">🎵 {user.genre}</span>}
+              {user?.website  && <a href={user.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300">🔗 Website</a>}
+              <span className="flex items-center gap-1">📅 Joined {joinDate}</span>
             </div>
-          ) : (
-            /* View mode */
-            <div className="space-y-3">
-              {user?.bio && <p className="text-white/60 text-sm leading-relaxed">{user.bio}</p>}
-
-              {/* Metadata row */}
-              <div className="flex flex-wrap gap-3 text-[12px] text-white/35">
-                {user?.location && <span className="flex items-center gap-1">📍 {user.location}</span>}
-                {user?.genre    && <span className="flex items-center gap-1">🎵 {user.genre}</span>}
-                {user?.website  && <a href={user.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300">🔗 Website</a>}
-                <span className="flex items-center gap-1">📅 Joined {joinDate}</span>
-              </div>
-
-              {/* Social links displayed below bio */}
-              <SocialLinksDisplay links={user?.socialLinks || {}} />
-            </div>
-          )}
+            <SocialLinksDisplay links={user?.socialLinks || {}} />
+          </div>
         </div>
       </div>
 
