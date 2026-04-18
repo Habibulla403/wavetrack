@@ -326,9 +326,9 @@ export default function Distribution({ user }) {
                   </span>
                   <div className="hidden sm:block text-right">
                     <div className="text-[11px] text-white/40 font-medium">
-                      {song.status === "live" ? `${userPlatforms.length}+ platforms` : "Not yet distributed"}
+                      {song.status === "live" ? `${userPlatforms.length}+ platforms` : "Under review — distributing soon"}
                     </div>
-                    <div className="text-[10px] text-white/20">{song.status === "live" ? "Global reach" : "Pending review"}</div>
+                    <div className="text-[10px] text-white/20">{song.status === "live" ? "Global reach" : "Being processed"}</div>
                   </div>
                 </div>
               ))}
