@@ -484,6 +484,77 @@ function AvatarUpload({ initials, avatarUrl, onUpload }) {
   );
 }
 
+// ── Background Cover Upload ───────────────────────────────────────
+function BackgroundUpload({ coverUrl, onUpload }) {
+  const inputRef = useRef();
+  const [preview,   setPreview]   = useState(coverUrl || null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+    try {
+      const url = await uploadAvatarToCloudinary(file);
+      if (url) { setPreview(url); onUpload(url); }
+    } catch { alert("Background upload failed."); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="relative group cursor-pointer w-full h-28 rounded-xl overflow-hidden border border-white/[0.08] bg-gradient-to-r from-emerald-600/30 via-teal-500/20 to-blue-600/15"
+      onClick={() => inputRef.current.click()}>
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files[0])}/>
+      {preview && <img src={preview} alt="bg" className="w-full h-full object-cover"/>}
+      <div className={`absolute inset-0 flex flex-col items-center justify-center gap-1.5 transition-opacity ${preview ? "opacity-0 group-hover:opacity-100 bg-black/50" : "opacity-100"}`}>
+        {uploading ? (
+          <svg className="animate-spin" width="20" height="20" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="#34d399" strokeWidth="3"/>
+            <path className="opacity-75" fill="#34d399" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        ) : (
+          <>
+            <svg width="20" height="20" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.7">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 5 5"/>
+            </svg>
+            <span className="text-[11px] text-white/60">{preview ? "Change background" : "Upload background photo"}</span>
+            <span className="text-[10px] text-white/30">Recommended: 1500×500px</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Countries List ────────────────────────────────────────────────
+const COUNTRIES = [
+  "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
+  "Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan",
+  "Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia",
+  "Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo","Costa Rica",
+  "Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt",
+  "El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon",
+  "Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana",
+  "Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel",
+  "Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos",
+  "Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi",
+  "Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova",
+  "Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands",
+  "New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau",
+  "Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania",
+  "Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal",
+  "Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea",
+  "South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan",
+  "Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
+  "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela",
+  "Vietnam","Yemen","Zambia","Zimbabwe",
+];
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 // ── Toggle Switch ─────────────────────────────────────────────────
 function Toggle({ checked, onChange }) {
   return (
@@ -564,6 +635,7 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
     website: user?.website || "",
     socialLinks: user?.socialLinks || {},
     avatarUrl: user?.avatarUrl || "",
+    coverUrl:  user?.coverUrl  || "",
   });
 
   const initials = user?.name
@@ -664,6 +736,16 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
               {/* Avatar + name */}
               <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
                 <h2 className="text-sm font-semibold text-white mb-5">Artist Profile</h2>
+
+                {/* Background Cover */}
+                <div className="mb-4">
+                  <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-2">Profile Background</label>
+                  <BackgroundUpload
+                    coverUrl={form.coverUrl}
+                    onUpload={url => setForm(f => ({ ...f, coverUrl: url }))}
+                  />
+                </div>
+
                 <div className="flex items-start gap-5 mb-6">
                   <AvatarUpload
                     initials={initials}
@@ -700,10 +782,14 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Location</label>
-                      <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })}
-                        placeholder="City, Country"
-                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all"/>
+                      <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Country</label>
+                      <select value={form.location} onChange={e => setForm({ ...form, location: e.target.value })}
+                        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white/70 focus:outline-none focus:border-emerald-500/50 transition-all appearance-none">
+                        <option value="" className="bg-[#1a1a2e]">Select your country</option>
+                        {COUNTRIES.map(c => (
+                          <option key={c} value={c} className="bg-[#1a1a2e]">{c}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Website</label>
@@ -713,7 +799,7 @@ export default function Settings({ user, onUpdate, onLogout, initialTab }) {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Bio</label>
+                    <label className="text-[11px] text-white/30 uppercase tracking-wide block mb-1.5">Bio <span className="text-white/20 normal-case">(max 30 words)</span></label>
                     <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })}
                       rows={3} placeholder="Tell people about yourself..."
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/50 transition-all resize-none"/>
