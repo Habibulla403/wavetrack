@@ -11,15 +11,45 @@ const toBase64 = (file) =>
 
 async function uploadToCloudinary(file, type) {
   const base64 = await toBase64(file);
-  const res = await fetch("https://wavetrack-backend-rggh.onrender.com/api/upload", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify({ file: base64, type }),
-  });
-  return res.json();
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
+
+  let res;
+  try {
+    res = await fetch("https://wavetrack-backend-rggh.onrender.com/api/upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ file: base64, type }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      throw new Error("Upload timed out. Please try a smaller file (under 20MB) or check your connection.");
+    }
+    throw new Error("Network error during upload. Please check your connection and try again.");
+  }
+  clearTimeout(timeoutId);
+
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    // Server returned HTML (likely a timeout/proxy error page), not JSON
+    throw new Error(
+      res.status === 413
+        ? "File too large. Please use a file under 20MB."
+        : "Upload failed (server error). The file may be too large — try a smaller file or try again."
+    );
+  }
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Upload failed. Please try again.");
+  }
+  return data;
 }
 
 const PLATFORMS = [
@@ -177,8 +207,16 @@ export default function UploadSection({ onSongAdded, onUpgradeClick }) {
 
   const handleAudio = (f) => {
     if (!f) return;
-    if (f.name.match(/\.(mp3|wav|flac)$/i)) setFile(f);
-    else alert("Please upload MP3, WAV, or FLAC only.");
+    if (!f.name.match(/\.(mp3|wav|flac)$/i)) {
+      alert("Please upload MP3, WAV, or FLAC only.");
+      return;
+    }
+    const maxBytes = 20 * 1024 * 1024; // 20MB practical limit on current hosting
+    if (f.size > maxBytes) {
+      alert(`This file is ${(f.size/1024/1024).toFixed(1)}MB. Please use a file under 20MB — large files currently fail to upload due to server limits. (MP3 at 128–192kbps is usually well under this.)`);
+      return;
+    }
+    setFile(f);
   };
 
   const togglePlatform = (key) => {
@@ -332,7 +370,7 @@ export default function UploadSection({ onSongAdded, onUpgradeClick }) {
                     </svg>
                   </div>
                   <p className="text-sm text-white/50 font-medium">Drag and drop your track</p>
-                  <p className="text-[12px] text-white/25 mt-1">MP3, WAV, FLAC up to 300 MB</p>
+                  <p className="text-[12px] text-white/25 mt-1">MP3, WAV, FLAC up to 20 MB</p>
                 </div>
               )}
             </div>
